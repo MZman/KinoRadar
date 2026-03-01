@@ -1,42 +1,100 @@
-# KinoRadar (iPhone App)
+# KinoRadar
 
-SwiftUI-App fuer iOS, die aktuelle und kommende Kinofilme anzeigt.
+KinoRadar ist eine iPhone-App (SwiftUI), mit der du aktuelle und kommende Kinofilme entdecken, nach Genre filtern, markieren und direkt in einer einheitlichen Detailseite bewerten kannst.
 
-## Funktionen
-- Splashscreen beim App-Start (maximal 2 Sekunden), waehrend Filme im Hintergrund laden
-- Liste mit `Jetzt im Kino` und `Demnaechst` Filmen
-- Auf `Kinofilme` gibt es einen Suchbutton fuer Freitextsuche nach Filmtiteln
-- Genre-Filter per rundem Button oben rechts; Auswahl oeffnet sich als Sheet
-- `Jetzt im Kino` zeigt nur aktuell laufende Filme
-- `Demnaechst` zeigt Filme von heute bis Ende des laufenden Jahres
-- Genre-Filter kann zurueckgesetzt werden und als gespeicherter Filter erneut per Klick genutzt werden
-- Genre-Auswahl im Filter erfolgt per Wheel-Picker (Rad)
-- Bereich `Aktuelle Auswahl speichern` wird erst ueber den Speichern-Button neben `Zuruecksetzen` eingeblendet
-- Filme als `interessant` markieren
-- Eigene Liste aller markierten Filme
-- Sortierung in der eigenen Liste:
+## Screenshots
+
+Die folgenden Screenshots sind als Wireframe-Vorlagen vorgesehen:
+
+![Mainseite Wireframe](docs/screenshots/mainseite-wireframe.png)
+
+![Detailseite Wireframe](docs/screenshots/detailseite-wireframe.png)
+
+Hinweis: Lege die zwei von dir bereitgestellten Bilder mit genau diesen Dateinamen in `docs/screenshots/` ab, damit sie im README sichtbar sind.
+
+## Kernfunktionen
+
+### 1. Kinofilme entdecken
+- Bereich **Jetzt im Kino** mit aktuell laufenden Filmen
+- Bereich **Demnaechst** mit Filmen bis Ende des laufenden Jahres
+- Freitext-Suche nach Filmtitel
+- Genre-Filter per Button oben rechts
+
+### 2. Merkliste (Meine Filme)
+- Filme per Merken-Symbol speichern
+- Eigene Liste aller gemerkten Filme
+- Sortierung:
   - Alphabetisch
-  - Nach Releasedatum
-- Detailseite pro Film:
-  - Bewertung von 0 bis 5 Sternen
-  - Optionaler Kommentar
-- Filmzeile mit Poster, Titel, Releasedatum und Genre
-- Antippen eines Films oeffnet eine Detailseite mit allen Film-Infos
-- Einstellungsseite:
-  - TMDB API Key hinterlegen
-  - Persoenlichen Namen hinterlegen
-  - Region fuer Kinostarts auswaehlen
-  - Sprache fuer Filmdaten auswaehlen
-- Lokale Speicherung (Merkliste, Film-Infos inkl. Genre, Bewertung, Kommentar, Filter-Presets)
+  - Nach Release-Datum
 
-## Setup
-1. Projekt in Xcode oeffnen: `KinoRadar/KinoRadar.xcodeproj`
-2. App auf iPhone-Simulator starten.
-3. In der App zum Tab `Einstellungen` wechseln und den TMDB API Key eintragen.
+### 3. Einheitliche Detailseite
+- Aus **Kinofilme** und **Meine Filme** erreichbar
+- Gleiche Struktur und Inhalte auf beiden Wegen
+- Poster-/Hero-Bereich, Basisinfos und Zusatzbereiche
+- Eigene Bewertung direkt auf der Detailseite
 
-## API
-Die App nutzt The Movie Database (TMDB):
-- Endpoint `movie/now_playing`
-- Endpoint `discover/movie`
-- Endpoint `genre/movie/list`
-- Endpoint `search/movie`
+### 4. Bewertung und Notizen
+- Sternebewertung von **0 bis 5**
+- Optionaler Kommentar
+- Lokale Speicherung der Bewertung
+
+### 5. Einstellungen
+- TMDB API-Key hinterlegen
+- Persönlichen Namen hinterlegen
+- Region auswählen (Land)
+- Sprache auswählen (lokalisierte Filmdaten)
+
+### 6. Startverhalten
+- Splashscreen beim Start
+- Daten laden im Hintergrund
+- Maximal 2 Sekunden Splash-Dauer
+
+## Technischer Aufbau
+
+- **UI-Framework:** SwiftUI
+- **Architektur:** View + Store + Service
+- **Datenquelle:** The Movie Database (TMDB)
+- **Persistenz:** UserDefaults (z. B. Merkliste, Bewertungen, Filter-Presets)
+
+Projektstruktur:
+
+- `KinoRadar/KinoRadarApp.swift` – App-Entry
+- `KinoRadar/RootView.swift` – Tab-Struktur + Splash/Startup
+- `KinoRadar/Views/` – Screens und UI-Komponenten
+- `KinoRadar/Stores/` – State-Management und Persistenz
+- `KinoRadar/Services/TMDBService.swift` – API-Kommunikation
+- `KinoRadar/Models/` – Datenmodelle
+
+## API-Endpunkte (TMDB)
+
+Die App nutzt unter anderem:
+- `movie/now_playing`
+- `discover/movie`
+- `genre/movie/list`
+- `search/movie`
+
+## Installation und Start
+
+1. Projekt in Xcode öffnen:
+   - `KinoRadar/KinoRadar.xcodeproj`
+2. iPhone-Simulator oder echtes Gerät auswählen
+3. App starten
+4. In der App zu **Einstellungen** wechseln und TMDB API-Key eintragen
+
+## Voraussetzungen
+
+- Xcode 15+
+- iOS Deployment Target laut Projektkonfiguration
+- Gültiger TMDB API-Key
+
+## Hinweise zur Verwendung
+
+- Ohne API-Key können keine Filmdaten geladen werden.
+- Region und Sprache beeinflussen Titel, Texte und Verfügbarkeiten.
+- Gemerkte Filme und Bewertungen werden lokal gespeichert.
+
+## Nächste sinnvolle Erweiterungen
+
+- Mehr Detaildaten aus der API (z. B. Cast, Bildergalerie, Reviews) vollständig in der Detailseite
+- Offline-Cache für erweiterte Filmdetails
+- UI-Feinschliff auf Basis finaler Design-Screenshots
