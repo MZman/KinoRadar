@@ -57,7 +57,7 @@ struct InterestedMoviesView: View {
                 Section("Meine Filme") {
                     ForEach(sortedMovies) { movie in
                         NavigationLink {
-                            RatingDetailView(movie: movie)
+                            MovieInfoView(movie: movie, genreText: genreText(for: movie))
                         } label: {
                             HStack(alignment: .top, spacing: 12) {
                                 InterestedPosterThumbnailView(url: movie.posterURL)

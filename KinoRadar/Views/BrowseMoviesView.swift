@@ -115,9 +115,11 @@ struct BrowseMoviesView: View {
             } else {
                 LazyVGrid(columns: gridColumns, spacing: 14) {
                     ForEach(movies) { movie in
+                        let detailGenreText = genreText(for: movie)
                         MovieGridCard(
                             movie: movie,
-                            genreText: genreSummary(for: movie),
+                            cardGenreText: genreSummary(for: movie),
+                            detailGenreText: detailGenreText,
                             releaseYear: releaseYearText(for: movie),
                             isInterested: store.isInterested(movie),
                             onToggle: { store.toggleInterested(movie) }
@@ -158,6 +160,14 @@ struct BrowseMoviesView: View {
         return names.prefix(2).joined(separator: ", ")
     }
 
+    private func genreText(for movie: Movie) -> String {
+        let names = store.genreNames(for: movie)
+        if names.isEmpty {
+            return "Unbekannt"
+        }
+        return names.joined(separator: ", ")
+    }
+
     private func releaseYearText(for movie: Movie) -> String {
         guard let releaseDate = movie.releaseDate else {
             return "Unbekannt"
@@ -168,14 +178,15 @@ struct BrowseMoviesView: View {
 
 private struct MovieGridCard: View {
     let movie: Movie
-    let genreText: String
+    let cardGenreText: String
+    let detailGenreText: String
     let releaseYear: String
     let isInterested: Bool
     let onToggle: () -> Void
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            NavigationLink(destination: MovieInfoView(movie: movie, genreText: genreText)) {
+            NavigationLink(destination: MovieInfoView(movie: movie, genreText: detailGenreText)) {
                 VStack(alignment: .leading, spacing: 6) {
                     PosterGridView(url: movie.posterURL)
 
@@ -183,7 +194,7 @@ private struct MovieGridCard: View {
                         .font(.headline)
                         .lineLimit(1)
 
-                    Text(genreText)
+                    Text(cardGenreText)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
