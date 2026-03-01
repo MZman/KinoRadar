@@ -26,8 +26,9 @@ final class MovieStore: ObservableObject {
     private let calendar = Calendar.current
     private var movieCache: [Int: Movie] = [:]
     private var cachedGenreNamesByMovieID: [Int: [String]] = [:]
-    private var movieDetailCache: [Int: MovieDetail] = [:]
+    private var movieDetailCache: [String: MovieDetail] = [:]
     private var personDetailCache: [Int: PersonDetail] = [:]
+    private var watchProviderCache: [String: WatchProviderRegionInfo] = [:]
 
     private enum Keys {
         static let interestedMovieIDs = "interested_movie_ids"
@@ -208,16 +209,21 @@ final class MovieStore: ObservableObject {
         return results
     }
 
-    func cachedMovieDetails(for movieID: Int) -> MovieDetail? {
-        movieDetailCache[movieID]
+    func fetchTMDBCountries() async throws -> [RegionOption] {
+        try await service.fetchTMDBCountries()
     }
 
-    func fetchMovieDetails(for movieID: Int, forceRefresh: Bool = false) async throws -> MovieDetail {
-        if !forceRefresh, let cached = movieDetailCache[movieID] {
+    func cachedMovieDetails(for movie: Movie) -> MovieDetail? {
+        movieDetailCache[movieDetailsKey(for: movie)]
+    }
+
+    func fetchMovieDetails(for movie: Movie, forceRefresh: Bool = false) async throws -> MovieDetail {
+        let cacheKey = movieDetailsKey(for: movie)
+        if !forceRefresh, let cached = movieDetailCache[cacheKey] {
             return cached
         }
-        let details = try await service.fetchMovieDetails(movieID: movieID)
-        movieDetailCache[movieID] = details
+        let details = try await service.fetchMediaDetails(mediaType: movie.mediaType, id: movie.id)
+        movieDetailCache[cacheKey] = details
         return details
     }
 
@@ -232,6 +238,32 @@ final class MovieStore: ObservableObject {
         let details = try await service.fetchPersonDetails(personID: personID)
         personDetailCache[personID] = details
         return details
+    }
+
+    func cachedWatchProviders(for movie: Movie) -> WatchProviderRegionInfo? {
+        let cacheKey = watchProvidersKey(for: movie)
+        return watchProviderCache[cacheKey]
+    }
+
+    func fetchWatchProviders(for movie: Movie, forceRefresh: Bool = false) async throws -> WatchProviderRegionInfo? {
+        let cacheKey = watchProvidersKey(for: movie)
+        if !forceRefresh, let cached = watchProviderCache[cacheKey] {
+            return cached
+        }
+
+        let providers = try await service.fetchWatchProviders(mediaType: movie.mediaType, id: movie.id)
+        if let providers {
+            watchProviderCache[cacheKey] = providers
+        }
+        return providers
+    }
+
+    private func watchProvidersKey(for movie: Movie) -> String {
+        "\(movie.mediaType.rawValue)-\(movie.id)"
+    }
+
+    private func movieDetailsKey(for movie: Movie) -> String {
+        "\(movie.mediaType.rawValue)-\(movie.id)"
     }
 
     private func cache(movies: [Movie]) {

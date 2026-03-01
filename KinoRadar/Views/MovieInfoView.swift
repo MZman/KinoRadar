@@ -1,7 +1,10 @@
 import SwiftUI
+import SafariServices
+import UIKit
 
 struct MovieInfoView: View {
     @EnvironmentObject private var store: MovieStore
+    @Environment(\.openURL) private var openURL
 
     let movie: Movie
     let genreText: String
@@ -13,6 +16,10 @@ struct MovieInfoView: View {
     @State private var details: MovieDetail?
     @State private var isLoadingDetails = false
     @State private var detailsError: String?
+    @State private var watchProviders: WatchProviderRegionInfo?
+    @State private var watchProvidersError: String?
+    @State private var selectedImagePreview: MediaPreviewItem?
+    @State private var selectedVideoPreview: MovieVideo?
 
     var body: some View {
         ScrollView {
@@ -39,6 +46,7 @@ struct MovieInfoView: View {
 
                 infoCard
                 mediaCard
+                streamingCard
                 castCard
                 newsCard
                 ratingCard
@@ -64,10 +72,17 @@ struct MovieInfoView: View {
             let existing = store.feedback(for: movie.id)
             rating = existing.rating
             comment = existing.comment
-            details = store.cachedMovieDetails(for: movie.id)
+            details = store.cachedMovieDetails(for: movie)
+            watchProviders = store.cachedWatchProviders(for: movie)
         }
         .task(id: movie.id) {
             await loadMovieDetails()
+        }
+        .sheet(item: $selectedImagePreview) { item in
+            MediaImagePreviewSheet(item: item)
+        }
+        .sheet(item: $selectedVideoPreview) { video in
+            VideoPreviewSheet(video: video)
         }
     }
 
@@ -212,7 +227,15 @@ struct MovieInfoView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 10) {
                         ForEach(backdropImages) { image in
-                            MediaImageCell(url: image.imageURL, size: CGSize(width: 220, height: 124))
+                            Button {
+                                selectedImagePreview = MediaPreviewItem(
+                                    url: image.imageURL,
+                                    title: "\(movie.title) - Hintergrund"
+                                )
+                            } label: {
+                                MediaImageCell(url: image.imageURL, size: CGSize(width: 220, height: 124))
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
@@ -225,7 +248,15 @@ struct MovieInfoView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 10) {
                         ForEach(posterImages) { image in
-                            MediaImageCell(url: image.imageURL, size: CGSize(width: 110, height: 165))
+                            Button {
+                                selectedImagePreview = MediaPreviewItem(
+                                    url: image.imageURL,
+                                    title: "\(movie.title) - Poster"
+                                )
+                            } label: {
+                                MediaImageCell(url: image.imageURL, size: CGSize(width: 110, height: 165))
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
@@ -238,14 +269,64 @@ struct MovieInfoView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 10) {
                         ForEach(trailerVideos) { video in
-                            if let youtubeURL = video.youtubeURL {
-                                Link(destination: youtubeURL) {
-                                    MovieVideoCell(video: video)
-                                }
-                                .buttonStyle(.plain)
+                            Button {
+                                selectedVideoPreview = video
+                            } label: {
+                                MovieVideoCell(video: video)
                             }
+                            .buttonStyle(.plain)
                         }
                     }
+                }
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color(.systemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color(.separator).opacity(0.2), lineWidth: 1)
+        )
+    }
+
+    private var streamingCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Streamen (JustWatch)")
+                .font(.title3.bold())
+
+            if let watchProvidersError {
+                Text(watchProvidersError)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else if !hasStreamingProviders {
+                Text("Keine Streaming-Infos verfuegbar.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                if !streamFlatrateProviders.isEmpty {
+                    providerCategoryRow(title: "Abo", providers: streamFlatrateProviders)
+                }
+                if !streamFreeProviders.isEmpty {
+                    providerCategoryRow(title: "Kostenlos", providers: streamFreeProviders)
+                }
+                if !streamAdsProviders.isEmpty {
+                    providerCategoryRow(title: "Mit Werbung", providers: streamAdsProviders)
+                }
+                if !streamRentProviders.isEmpty {
+                    providerCategoryRow(title: "Leihen", providers: streamRentProviders)
+                }
+                if !streamBuyProviders.isEmpty {
+                    providerCategoryRow(title: "Kaufen", providers: streamBuyProviders)
+                }
+            }
+
+            if let linkString = watchProviders?.link, let linkURL = URL(string: linkString) {
+                Link(destination: linkURL) {
+                    Label("Mehr Streaming-Infos", systemImage: "arrow.up.right.square")
+                        .font(.subheadline.weight(.semibold))
                 }
             }
         }
@@ -426,18 +507,48 @@ struct MovieInfoView: View {
         }
     }
 
+    @ViewBuilder
+    private func providerCategoryRow(title: String, providers: [WatchProvider]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.headline)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(providers) { provider in
+                        Button {
+                            openStreamingProvider(provider)
+                        } label: {
+                            WatchProviderChip(provider: provider)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+    }
+
     private func loadMovieDetails() async {
         if details?.id != movie.id {
             details = nil
+            watchProviders = nil
         }
 
         isLoadingDetails = true
         detailsError = nil
+        watchProvidersError = nil
 
         do {
-            details = try await store.fetchMovieDetails(for: movie.id, forceRefresh: true)
+            details = try await store.fetchMovieDetails(for: movie, forceRefresh: true)
         } catch {
             detailsError = (error as? LocalizedError)?.errorDescription ?? "Details konnten nicht geladen werden."
+        }
+
+        do {
+            watchProviders = try await store.fetchWatchProviders(for: movie, forceRefresh: true)
+        } catch {
+            watchProviders = nil
+            watchProvidersError = (error as? LocalizedError)?.errorDescription ?? "Streaming-Infos konnten nicht geladen werden."
         }
 
         isLoadingDetails = false
@@ -553,6 +664,285 @@ struct MovieInfoView: View {
     private var reviewItems: [MovieReview] {
         Array((details?.reviews?.results ?? []).prefix(4))
     }
+
+    private var streamFlatrateProviders: [WatchProvider] {
+        uniqueProviders(from: watchProviders?.flatrate)
+    }
+
+    private var streamFreeProviders: [WatchProvider] {
+        uniqueProviders(from: watchProviders?.free)
+    }
+
+    private var streamAdsProviders: [WatchProvider] {
+        uniqueProviders(from: watchProviders?.ads)
+    }
+
+    private var streamRentProviders: [WatchProvider] {
+        uniqueProviders(from: watchProviders?.rent)
+    }
+
+    private var streamBuyProviders: [WatchProvider] {
+        uniqueProviders(from: watchProviders?.buy)
+    }
+
+    private var hasStreamingProviders: Bool {
+        !streamFlatrateProviders.isEmpty ||
+            !streamFreeProviders.isEmpty ||
+            !streamAdsProviders.isEmpty ||
+            !streamRentProviders.isEmpty ||
+            !streamBuyProviders.isEmpty
+    }
+
+    private func uniqueProviders(from providers: [WatchProvider]?) -> [WatchProvider] {
+        guard let providers else {
+            return []
+        }
+        var seen = Set<Int>()
+        return providers.filter { provider in
+            seen.insert(provider.id).inserted
+        }
+    }
+
+    private func openStreamingProvider(_ provider: WatchProvider) {
+        let candidates = providerDestinationURLs(for: provider)
+        openCandidateURLs(candidates)
+    }
+
+    private func openCandidateURLs(_ urls: [URL], at index: Int = 0) {
+        guard index < urls.count else {
+            return
+        }
+        openURL(urls[index]) { accepted in
+            if !accepted {
+                openCandidateURLs(urls, at: index + 1)
+            }
+        }
+    }
+
+    private func providerDestinationURLs(for provider: WatchProvider) -> [URL] {
+        let normalizedProvider = provider.providerName.lowercased()
+        let encodedTitle = movie.title
+            .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? movie.title
+
+        var urls: [URL] = []
+
+        if let justWatchLink = watchProviders?.link {
+            appendURL(justWatchLink, to: &urls)
+        }
+
+        if normalizedProvider.contains("disney") {
+            appendURL("disneyplus://", to: &urls)
+            appendURL("https://www.disneyplus.com/search/\(encodedTitle)", to: &urls)
+        } else if normalizedProvider.contains("netflix") {
+            appendURL("nflx://www.netflix.com/search?q=\(encodedTitle)", to: &urls)
+            appendURL("https://www.netflix.com/search?q=\(encodedTitle)", to: &urls)
+        } else if normalizedProvider.contains("amazon") || normalizedProvider.contains("prime video") {
+            appendURL("primevideo://search?query=\(encodedTitle)", to: &urls)
+            appendURL("https://www.primevideo.com/search/ref=atv_nb_sr?phrase=\(encodedTitle)", to: &urls)
+        } else if normalizedProvider.contains("apple tv") {
+            appendURL("videos://", to: &urls)
+            appendURL("https://tv.apple.com/search?term=\(encodedTitle)", to: &urls)
+        } else if normalizedProvider.contains("hulu") {
+            appendURL("hulu://", to: &urls)
+            appendURL("https://www.hulu.com/search?q=\(encodedTitle)", to: &urls)
+        } else if normalizedProvider.contains("max") {
+            appendURL("hbomax://", to: &urls)
+            appendURL("https://play.max.com/search?q=\(encodedTitle)", to: &urls)
+        } else if normalizedProvider.contains("paramount") {
+            appendURL("paramountplus://", to: &urls)
+            appendURL("https://www.paramountplus.com/search/?q=\(encodedTitle)", to: &urls)
+        } else if normalizedProvider.contains("peacock") {
+            appendURL("peacock://", to: &urls)
+            appendURL("https://www.peacocktv.com/search?q=\(encodedTitle)", to: &urls)
+        }
+
+        appendURL("https://www.justwatch.com/search?q=\(encodedTitle)", to: &urls)
+
+        return uniqueURLs(urls)
+    }
+
+    private func appendURL(_ value: String, to urls: inout [URL]) {
+        guard let url = URL(string: value) else {
+            return
+        }
+        urls.append(url)
+    }
+
+    private func uniqueURLs(_ urls: [URL]) -> [URL] {
+        var seen: Set<String> = []
+        return urls.filter { seen.insert($0.absoluteString).inserted }
+    }
+}
+
+private struct MediaPreviewItem: Identifiable {
+    let id = UUID()
+    let url: URL?
+    let title: String
+}
+
+private struct MediaImagePreviewSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    let item: MediaPreviewItem
+
+    @State private var isSaving = false
+    @State private var saveMessage: String?
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 16) {
+                    AsyncImage(url: item.url) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFit()
+                        case .empty:
+                            ProgressView("Lade Bild ...")
+                                .frame(maxWidth: .infinity, minHeight: 240)
+                        case .failure:
+                            fallback
+                        @unknown default:
+                            fallback
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .background(Color(.systemGray6))
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .padding(.horizontal, 12)
+
+                    if let saveMessage {
+                        Text(saveMessage)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.vertical, 16)
+            }
+            .navigationTitle(item.title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Schliessen") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        Task {
+                            await saveImage()
+                        }
+                    } label: {
+                        if isSaving {
+                            ProgressView()
+                        } else {
+                            Label("Speichern", systemImage: "square.and.arrow.down")
+                        }
+                    }
+                    .disabled(item.url == nil || isSaving)
+                }
+            }
+        }
+    }
+
+    private var fallback: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color(.systemGray5))
+            Image(systemName: "photo")
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, minHeight: 240)
+    }
+
+    private func saveImage() async {
+        guard let url = item.url else {
+            saveMessage = "Bild konnte nicht gespeichert werden."
+            return
+        }
+
+        isSaving = true
+        defer { isSaving = false }
+
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            guard let image = UIImage(data: data) else {
+                saveMessage = "Bildformat wird nicht unterstuetzt."
+                return
+            }
+            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+            saveMessage = "Bild wurde in Fotos gespeichert."
+        } catch {
+            saveMessage = "Speichern fehlgeschlagen."
+        }
+    }
+}
+
+private struct VideoPreviewSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
+
+    let video: MovieVideo
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if let url = video.youtubeURL {
+                    SafariView(url: url)
+                        .ignoresSafeArea(.container, edges: .bottom)
+                } else {
+                    Text("Video-URL nicht verfuegbar.")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .navigationTitle(video.name)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Schliessen") {
+                        dismiss()
+                    }
+                }
+                if let youtubeURL = video.youtubeURL {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        ShareLink(item: youtubeURL) {
+                            Image(systemName: "square.and.arrow.up")
+                        }
+                    }
+
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            if let youtubeAppURL = video.youtubeAppURL {
+                                openURL(youtubeAppURL)
+                            } else {
+                                openURL(youtubeURL)
+                            }
+                        } label: {
+                            Image(systemName: "play.rectangle")
+                        }
+                        .accessibilityLabel("In YouTube oeffnen")
+                    }
+                }
+            }
+        }
+    }
+}
+
+private extension MovieVideo {
+    var youtubeAppURL: URL? {
+        URL(string: "youtube://watch?v=\(key)")
+    }
+}
+
+private struct SafariView: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        SFSafariViewController(url: url)
+    }
+
+    func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {}
 }
 
 private struct MediaImageCell: View {
@@ -623,6 +1013,55 @@ private struct MovieVideoCell: View {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .stroke(Color(.separator).opacity(0.18), lineWidth: 1)
         )
+    }
+}
+
+private struct WatchProviderChip: View {
+    let provider: WatchProvider
+
+    var body: some View {
+        VStack(spacing: 6) {
+            AsyncImage(url: provider.logoURL) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .scaledToFill()
+                case .empty:
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(Color(.systemGray5))
+                        ProgressView()
+                    }
+                case .failure:
+                    fallback
+                @unknown default:
+                    fallback
+                }
+            }
+            .frame(width: 54, height: 54)
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+            Text(provider.providerName)
+                .font(.caption)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .frame(width: 72)
+        }
+        .padding(8)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color(.systemGray6))
+        )
+    }
+
+    private var fallback: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(Color(.systemGray5))
+            Image(systemName: "play.tv")
+                .foregroundStyle(.secondary)
+        }
     }
 }
 
@@ -719,6 +1158,7 @@ private struct ActorInfoView: View {
     @State private var details: PersonDetail?
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var selectedImagePreview: MediaPreviewItem?
 
     var body: some View {
         ScrollView {
@@ -758,6 +1198,9 @@ private struct ActorInfoView: View {
         }
         .task(id: castMember.id) {
             await loadActorDetails()
+        }
+        .sheet(item: $selectedImagePreview) { item in
+            MediaImagePreviewSheet(item: item)
         }
     }
 
@@ -856,7 +1299,15 @@ private struct ActorInfoView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 10) {
                         ForEach(actorImages) { image in
-                            MediaImageCell(url: image.imageURL, size: CGSize(width: 120, height: 170))
+                            Button {
+                                selectedImagePreview = MediaPreviewItem(
+                                    url: image.imageURL,
+                                    title: details?.name ?? castMember.name
+                                )
+                            } label: {
+                                MediaImageCell(url: image.imageURL, size: CGSize(width: 120, height: 170))
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
@@ -884,40 +1335,54 @@ private struct ActorInfoView: View {
                     .foregroundStyle(.secondary)
             } else {
                 ForEach(filmography) { credit in
-                    HStack(alignment: .top, spacing: 10) {
-                        AsyncImage(url: credit.posterURL) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .scaledToFill()
-                            case .empty:
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                        .fill(Color(.systemGray5))
-                                    ProgressView()
+                    NavigationLink {
+                        MovieInfoView(
+                            movie: credit.asMovieItem,
+                            genreText: genreText(for: credit)
+                        )
+                    } label: {
+                        HStack(alignment: .top, spacing: 10) {
+                            AsyncImage(url: credit.posterURL) { phase in
+                                switch phase {
+                                case .success(let image):
+                                    image
+                                        .resizable()
+                                        .scaledToFill()
+                                case .empty:
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                            .fill(Color(.systemGray5))
+                                        ProgressView()
+                                    }
+                                case .failure:
+                                    fallbackPoster
+                                @unknown default:
+                                    fallbackPoster
                                 }
-                            case .failure:
-                                fallbackPoster
-                            @unknown default:
-                                fallbackPoster
                             }
-                        }
-                        .frame(width: 48, height: 70)
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            .frame(width: 48, height: 70)
+                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
 
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(credit.displayTitle)
-                                .font(.subheadline.bold())
-                                .lineLimit(2)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(credit.displayTitle)
+                                    .font(.subheadline.bold())
+                                    .lineLimit(2)
 
-                            Text("\(credit.releaseYearText)  |  \(credit.character ?? "Unbekannt")")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(2)
+                                Text("\(credit.releaseYearText)  |  \(credit.character ?? "Unbekannt")")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(2)
+
+                                Text(credit.normalizedMediaType == .tv ? "Serie" : "Film")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            Spacer(minLength: 0)
                         }
+                        .padding(.vertical, 3)
                     }
-                    .padding(.vertical, 3)
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -1017,8 +1482,31 @@ private struct ActorInfoView: View {
     }
 
     private var filmography: [PersonMovieCredit] {
-        let credits = details?.movieCredits?.cast ?? []
-        let sorted = credits.sorted { lhs, rhs in
+        let rawCredits = details?.combinedCredits?.cast ?? details?.movieCredits?.cast ?? []
+        var uniqueCreditsByKey: [String: PersonMovieCredit] = [:]
+
+        for credit in rawCredits {
+            let mediaType = credit.normalizedMediaType.rawValue
+            let key = "\(mediaType)-\(credit.id)"
+
+            guard let existing = uniqueCreditsByKey[key] else {
+                uniqueCreditsByKey[key] = credit
+                continue
+            }
+
+            switch (credit.releaseDate, existing.releaseDate) {
+            case let (newDate?, oldDate?):
+                if newDate > oldDate {
+                    uniqueCreditsByKey[key] = credit
+                }
+            case (_?, nil):
+                uniqueCreditsByKey[key] = credit
+            default:
+                break
+            }
+        }
+
+        return uniqueCreditsByKey.values.sorted { lhs, rhs in
             switch (lhs.releaseDate, rhs.releaseDate) {
             case let (l?, r?):
                 return l > r
@@ -1030,7 +1518,17 @@ private struct ActorInfoView: View {
                 return lhs.displayTitle.localizedCaseInsensitiveCompare(rhs.displayTitle) == .orderedAscending
             }
         }
-        return Array(sorted.prefix(20))
+    }
+
+    private func genreText(for credit: PersonMovieCredit) -> String {
+        let lookup = Dictionary(
+            uniqueKeysWithValues: store.sortedGenres(for: credit.normalizedMediaType).map { ($0.id, $0.name) }
+        )
+        let names = credit.genreIDs.compactMap { lookup[$0] }
+        if names.isEmpty {
+            return "Unbekannt"
+        }
+        return names.joined(separator: ", ")
     }
 
     private var instagramURL: URL? {

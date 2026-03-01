@@ -1,0 +1,65 @@
+{
+  "buildCommand" : {
+    "command" : "build",
+    "skipDependencies" : false,
+    "style" : "buildOnly"
+  },
+  "configuredTargets" : [
+    {
+      "guid" : "730f411a8609972419806ed5a4ef5b0d7cdd9b7650803c2e32d045dd73bd93af"
+    }
+  ],
+  "containerPath" : "/Users/moezciftci/Documents/codex/KinoRadar/KinoRadar.xcodeproj",
+  "continueBuildingAfterErrors" : false,
+  "dependencyScope" : "workspace",
+  "enableIndexBuildArena" : false,
+  "hideShellScriptEnvironment" : false,
+  "parameters" : {
+    "action" : "build",
+    "activeArchitecture" : "undefined_arch",
+    "activeRunDestination" : {
+      "disableOnlyActiveArch" : true,
+      "platform" : "iphonesimulator",
+      "sdk" : "iphonesimulator26.2",
+      "sdkVariant" : "iphonesimulator",
+      "supportedArchitectures" : [
+        "i386",
+        "x86_64"
+      ],
+      "targetArchitecture" : "undefined_arch"
+    },
+    "arenaInfo" : {
+      "buildIntermediatesPath" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex",
+      "buildProductsPath" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Products",
+      "derivedDataPath" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData",
+      "indexDataStoreFolderPath" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Index.noindex/DataStore",
+      "indexEnableDataStore" : true,
+      "indexPCHPath" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Index.noindex/PrecompiledHeaders",
+      "pchPath" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/PrecompiledHeaders"
+    },
+    "configurationName" : "Debug",
+    "overrides" : {
+      "commandLine" : {
+        "table" : {
+
+        }
+      },
+      "synthesized" : {
+        "table" : {
+          "ACTION" : "build",
+          "CLANG_COVERAGE_MAPPING" : "YES",
+          "CLANG_PROFILE_DATA_DIRECTORY" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/ProfileData",
+          "ENABLE_PREVIEWS" : "NO",
+          "ENABLE_XOJIT_PREVIEWS" : "YES",
+          "ONLY_ACTIVE_ARCH" : "YES"
+        }
+      }
+    }
+  },
+  "schemeCommand" : "launch",
+  "showNonLoggedProgress" : true,
+  "useDryRun" : false,
+  "useImplicitDependencies" : true,
+  "useLegacyBuildLocations" : false,
+  "useParallelTargets" : true
+}

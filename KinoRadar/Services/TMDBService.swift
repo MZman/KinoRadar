@@ -9,8 +9,10 @@ protocol MovieServiceProtocol {
     func fetchTVGenres() async throws -> [Genre]
     func searchMovies(query: String) async throws -> [Movie]
     func searchTVSeries(query: String) async throws -> [Movie]
-    func fetchMovieDetails(movieID: Int) async throws -> MovieDetail
+    func fetchMediaDetails(mediaType: MediaType, id: Int) async throws -> MovieDetail
     func fetchPersonDetails(personID: Int) async throws -> PersonDetail
+    func fetchWatchProviders(mediaType: MediaType, id: Int) async throws -> WatchProviderRegionInfo?
+    func fetchTMDBCountries() async throws -> [RegionOption]
 }
 
 enum APIConfig {
@@ -290,13 +292,13 @@ struct TMDBService: MovieServiceProtocol {
         }
     }
 
-    func fetchMovieDetails(movieID: Int) async throws -> MovieDetail {
+    func fetchMediaDetails(mediaType: MediaType, id: Int) async throws -> MovieDetail {
         let apiKey = try readAPIKey()
         let localeSettings = readLocaleSettings()
         var components = URLComponents(
             url: APIConfig.baseURL
-                .appendingPathComponent("movie")
-                .appendingPathComponent(String(movieID)),
+                .appendingPathComponent(mediaType.rawValue)
+                .appendingPathComponent(String(id)),
             resolvingAgainstBaseURL: false
         )
         components?.queryItems = [
@@ -330,7 +332,7 @@ struct TMDBService: MovieServiceProtocol {
         components?.queryItems = [
             URLQueryItem(name: "api_key", value: apiKey),
             URLQueryItem(name: "language", value: localeSettings.languageCode),
-            URLQueryItem(name: "append_to_response", value: "images,movie_credits,external_ids"),
+            URLQueryItem(name: "append_to_response", value: "images,combined_credits,movie_credits,external_ids"),
             URLQueryItem(name: "include_image_language", value: "\(localeSettings.languageCode),null")
         ]
 
@@ -344,6 +346,76 @@ struct TMDBService: MovieServiceProtocol {
         }
 
         return try decoder.decode(PersonDetail.self, from: data)
+    }
+
+    func fetchWatchProviders(mediaType: MediaType, id: Int) async throws -> WatchProviderRegionInfo? {
+        let apiKey = try readAPIKey()
+        let localeSettings = readLocaleSettings()
+        var components = URLComponents(
+            url: APIConfig.baseURL
+                .appendingPathComponent(mediaType.rawValue)
+                .appendingPathComponent(String(id))
+                .appendingPathComponent("watch")
+                .appendingPathComponent("providers"),
+            resolvingAgainstBaseURL: false
+        )
+        components?.queryItems = [
+            URLQueryItem(name: "api_key", value: apiKey)
+        ]
+
+        guard let url = components?.url else {
+            throw URLError(.badURL)
+        }
+
+        let (data, response) = try await session.data(from: url)
+        guard let httpResponse = response as? HTTPURLResponse, 200..<300 ~= httpResponse.statusCode else {
+            throw TMDBError.invalidResponse
+        }
+
+        let decoded = try decoder.decode(WatchProviderResponse.self, from: data)
+        let regionCode = localeSettings.regionCode.uppercased()
+
+        if let regionResult = decoded.results[regionCode] {
+            return regionResult
+        }
+
+        // Fallback: if no match for selected region, return first available region.
+        return decoded.results.values.first
+    }
+
+    func fetchTMDBCountries() async throws -> [RegionOption] {
+        let apiKey = try readAPIKey()
+        var components = URLComponents(
+            url: APIConfig.baseURL.appendingPathComponent("configuration/countries"),
+            resolvingAgainstBaseURL: false
+        )
+        components?.queryItems = [
+            URLQueryItem(name: "api_key", value: apiKey)
+        ]
+
+        guard let url = components?.url else {
+            throw URLError(.badURL)
+        }
+
+        let (data, response) = try await session.data(from: url)
+        guard let httpResponse = response as? HTTPURLResponse, 200..<300 ~= httpResponse.statusCode else {
+            throw TMDBError.invalidResponse
+        }
+
+        let decoded = try decoder.decode([TMDBCountryConfig].self, from: data)
+        var seenCodes: Set<String> = []
+        let regions = decoded.compactMap { item -> RegionOption? in
+            let code = item.iso3166_1.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+            guard !code.isEmpty, seenCodes.insert(code).inserted else {
+                return nil
+            }
+            let nameCandidate = (item.nativeName ?? item.englishName).trimmingCharacters(in: .whitespacesAndNewlines)
+            let name = nameCandidate.isEmpty ? code : nameCandidate
+            return RegionOption(code: code, name: name)
+        }
+        return regions.sorted {
+            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+        }
     }
 
     private func fetchDiscoverMovies(from startDate: Date, to endDate: Date) async throws -> [Movie] {
@@ -513,6 +585,18 @@ struct TMDBService: MovieServiceProtocol {
             regionCode: resolvedRegionCode,
             languageCode: resolvedLanguageCode
         )
+    }
+}
+
+private struct TMDBCountryConfig: Decodable {
+    let iso3166_1: String
+    let englishName: String
+    let nativeName: String?
+
+    enum CodingKeys: String, CodingKey {
+        case iso3166_1 = "iso_3166_1"
+        case englishName = "english_name"
+        case nativeName = "native_name"
     }
 }
 

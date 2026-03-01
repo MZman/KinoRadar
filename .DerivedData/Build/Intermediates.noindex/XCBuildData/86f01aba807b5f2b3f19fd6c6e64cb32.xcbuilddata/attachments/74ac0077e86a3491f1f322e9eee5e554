@@ -1,0 +1,149 @@
+{
+  "" : {
+    "diagnostics" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/KinoRadar-primary.dia",
+    "emit-module-dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/KinoRadar-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/KinoRadar-primary-emit-module.dia",
+    "pch" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/KinoRadar-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/KinoRadar-primary.swiftdeps"
+  },
+  "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "const-values" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftconstvalues",
+    "dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/GeneratedAssetSymbols.d",
+    "diagnostics" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/GeneratedAssetSymbols.dia",
+    "index-unit-output-path" : "/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "swift-dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftdeps",
+    "swiftmodule" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/GeneratedAssetSymbols~partial.swiftmodule"
+  },
+  "/Users/moezciftci/Documents/codex/KinoRadar/KinoRadar/KinoRadarApp.swift" : {
+    "const-values" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/KinoRadarApp.swiftconstvalues",
+    "dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/KinoRadarApp.d",
+    "diagnostics" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/KinoRadarApp.dia",
+    "index-unit-output-path" : "/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/KinoRadarApp.o",
+    "llvm-bc" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/KinoRadarApp.bc",
+    "object" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/KinoRadarApp.o",
+    "swift-dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/KinoRadarApp.swiftdeps",
+    "swiftmodule" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/KinoRadarApp~partial.swiftmodule"
+  },
+  "/Users/moezciftci/Documents/codex/KinoRadar/KinoRadar/Models/Movie.swift" : {
+    "const-values" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/Movie.swiftconstvalues",
+    "dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/Movie.d",
+    "diagnostics" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/Movie.dia",
+    "index-unit-output-path" : "/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/Movie.o",
+    "llvm-bc" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/Movie.bc",
+    "object" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/Movie.o",
+    "swift-dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/Movie.swiftdeps",
+    "swiftmodule" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/Movie~partial.swiftmodule"
+  },
+  "/Users/moezciftci/Documents/codex/KinoRadar/KinoRadar/Models/MovieFeedback.swift" : {
+    "const-values" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/MovieFeedback.swiftconstvalues",
+    "dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/MovieFeedback.d",
+    "diagnostics" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/MovieFeedback.dia",
+    "index-unit-output-path" : "/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/MovieFeedback.o",
+    "llvm-bc" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/MovieFeedback.bc",
+    "object" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/MovieFeedback.o",
+    "swift-dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/MovieFeedback.swiftdeps",
+    "swiftmodule" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/MovieFeedback~partial.swiftmodule"
+  },
+  "/Users/moezciftci/Documents/codex/KinoRadar/KinoRadar/RootView.swift" : {
+    "const-values" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/RootView.swiftconstvalues",
+    "dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/RootView.d",
+    "diagnostics" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/RootView.dia",
+    "index-unit-output-path" : "/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/RootView.o",
+    "llvm-bc" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/RootView.bc",
+    "object" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/RootView.o",
+    "swift-dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/RootView.swiftdeps",
+    "swiftmodule" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/RootView~partial.swiftmodule"
+  },
+  "/Users/moezciftci/Documents/codex/KinoRadar/KinoRadar/Services/TMDBService.swift" : {
+    "const-values" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/TMDBService.swiftconstvalues",
+    "dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/TMDBService.d",
+    "diagnostics" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/TMDBService.dia",
+    "index-unit-output-path" : "/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/TMDBService.o",
+    "llvm-bc" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/TMDBService.bc",
+    "object" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/TMDBService.o",
+    "swift-dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/TMDBService.swiftdeps",
+    "swiftmodule" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/TMDBService~partial.swiftmodule"
+  },
+  "/Users/moezciftci/Documents/codex/KinoRadar/KinoRadar/Stores/AppSettings.swift" : {
+    "const-values" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/AppSettings.swiftconstvalues",
+    "dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/AppSettings.d",
+    "diagnostics" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/AppSettings.dia",
+    "index-unit-output-path" : "/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/AppSettings.o",
+    "llvm-bc" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/AppSettings.bc",
+    "object" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/AppSettings.o",
+    "swift-dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/AppSettings.swiftdeps",
+    "swiftmodule" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/AppSettings~partial.swiftmodule"
+  },
+  "/Users/moezciftci/Documents/codex/KinoRadar/KinoRadar/Stores/MovieStore.swift" : {
+    "const-values" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/MovieStore.swiftconstvalues",
+    "dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/MovieStore.d",
+    "diagnostics" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/MovieStore.dia",
+    "index-unit-output-path" : "/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/MovieStore.o",
+    "llvm-bc" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/MovieStore.bc",
+    "object" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/MovieStore.o",
+    "swift-dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/MovieStore.swiftdeps",
+    "swiftmodule" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/MovieStore~partial.swiftmodule"
+  },
+  "/Users/moezciftci/Documents/codex/KinoRadar/KinoRadar/Views/BrowseMoviesView.swift" : {
+    "const-values" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/BrowseMoviesView.swiftconstvalues",
+    "dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/BrowseMoviesView.d",
+    "diagnostics" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/BrowseMoviesView.dia",
+    "index-unit-output-path" : "/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/BrowseMoviesView.o",
+    "llvm-bc" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/BrowseMoviesView.bc",
+    "object" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/BrowseMoviesView.o",
+    "swift-dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/BrowseMoviesView.swiftdeps",
+    "swiftmodule" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/BrowseMoviesView~partial.swiftmodule"
+  },
+  "/Users/moezciftci/Documents/codex/KinoRadar/KinoRadar/Views/InterestedMoviesView.swift" : {
+    "const-values" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/InterestedMoviesView.swiftconstvalues",
+    "dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/InterestedMoviesView.d",
+    "diagnostics" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/InterestedMoviesView.dia",
+    "index-unit-output-path" : "/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/InterestedMoviesView.o",
+    "llvm-bc" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/InterestedMoviesView.bc",
+    "object" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/InterestedMoviesView.o",
+    "swift-dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/InterestedMoviesView.swiftdeps",
+    "swiftmodule" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/InterestedMoviesView~partial.swiftmodule"
+  },
+  "/Users/moezciftci/Documents/codex/KinoRadar/KinoRadar/Views/MovieInfoView.swift" : {
+    "const-values" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/MovieInfoView.swiftconstvalues",
+    "dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/MovieInfoView.d",
+    "diagnostics" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/MovieInfoView.dia",
+    "index-unit-output-path" : "/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/MovieInfoView.o",
+    "llvm-bc" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/MovieInfoView.bc",
+    "object" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/MovieInfoView.o",
+    "swift-dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/MovieInfoView.swiftdeps",
+    "swiftmodule" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/MovieInfoView~partial.swiftmodule"
+  },
+  "/Users/moezciftci/Documents/codex/KinoRadar/KinoRadar/Views/RatingDetailView.swift" : {
+    "const-values" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/RatingDetailView.swiftconstvalues",
+    "dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/RatingDetailView.d",
+    "diagnostics" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/RatingDetailView.dia",
+    "index-unit-output-path" : "/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/RatingDetailView.o",
+    "llvm-bc" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/RatingDetailView.bc",
+    "object" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/RatingDetailView.o",
+    "swift-dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/RatingDetailView.swiftdeps",
+    "swiftmodule" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/RatingDetailView~partial.swiftmodule"
+  },
+  "/Users/moezciftci/Documents/codex/KinoRadar/KinoRadar/Views/SettingsView.swift" : {
+    "const-values" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/SettingsView.swiftconstvalues",
+    "dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/SettingsView.d",
+    "diagnostics" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/SettingsView.dia",
+    "index-unit-output-path" : "/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/SettingsView.o",
+    "llvm-bc" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/SettingsView.bc",
+    "object" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/SettingsView.o",
+    "swift-dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/SettingsView.swiftdeps",
+    "swiftmodule" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/SettingsView~partial.swiftmodule"
+  },
+  "/Users/moezciftci/Documents/codex/KinoRadar/KinoRadar/Views/StarRatingView.swift" : {
+    "const-values" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/StarRatingView.swiftconstvalues",
+    "dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/StarRatingView.d",
+    "diagnostics" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/StarRatingView.dia",
+    "index-unit-output-path" : "/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/StarRatingView.o",
+    "llvm-bc" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/StarRatingView.bc",
+    "object" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/StarRatingView.o",
+    "swift-dependencies" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/StarRatingView.swiftdeps",
+    "swiftmodule" : "/Users/moezciftci/Documents/codex/KinoRadar/.DerivedData/Build/Intermediates.noindex/KinoRadar.build/Debug-iphonesimulator/KinoRadar.build/Objects-normal/arm64/StarRatingView~partial.swiftmodule"
+  }
+}

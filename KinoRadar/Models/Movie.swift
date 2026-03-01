@@ -123,7 +123,7 @@ struct GenreResponse: Decodable {
     let genres: [Genre]
 }
 
-struct MovieDetail: Codable, Hashable {
+struct MovieDetail: Decodable, Hashable {
     let id: Int
     let title: String
     let overview: String
@@ -144,9 +144,12 @@ struct MovieDetail: Codable, Hashable {
     enum CodingKeys: String, CodingKey {
         case id
         case title
+        case name
         case overview
         case releaseDate = "release_date"
+        case firstAirDate = "first_air_date"
         case runtime
+        case episodeRuntime = "episode_run_time"
         case voteAverage = "vote_average"
         case voteCount = "vote_count"
         case status
@@ -158,6 +161,42 @@ struct MovieDetail: Codable, Hashable {
         case images
         case reviews
         case videos
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(Int.self, forKey: .id)
+
+        let titleFromMovie = try container.decodeIfPresent(String.self, forKey: .title)
+        let titleFromTV = try container.decodeIfPresent(String.self, forKey: .name)
+        let resolvedTitle = (titleFromMovie ?? titleFromTV ?? "Unbekannt")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        title = resolvedTitle.isEmpty ? "Unbekannt" : resolvedTitle
+
+        overview = try container.decodeIfPresent(String.self, forKey: .overview) ?? ""
+        releaseDate =
+            container.decodeTMDBDateIfPresent(forKey: .releaseDate)
+            ?? container.decodeTMDBDateIfPresent(forKey: .firstAirDate)
+
+        if let runtimeValue = try container.decodeIfPresent(Int.self, forKey: .runtime) {
+            runtime = runtimeValue
+        } else if let episodeRuntime = try container.decodeIfPresent([Int].self, forKey: .episodeRuntime) {
+            runtime = episodeRuntime.first
+        } else {
+            runtime = nil
+        }
+
+        voteAverage = try container.decodeIfPresent(Double.self, forKey: .voteAverage) ?? 0
+        voteCount = try container.decodeIfPresent(Int.self, forKey: .voteCount) ?? 0
+        status = try container.decodeIfPresent(String.self, forKey: .status)
+        tagline = try container.decodeIfPresent(String.self, forKey: .tagline)
+        backdropPath = try container.decodeIfPresent(String.self, forKey: .backdropPath)
+        posterPath = try container.decodeIfPresent(String.self, forKey: .posterPath)
+        genres = try container.decodeIfPresent([Genre].self, forKey: .genres) ?? []
+        credits = try container.decodeIfPresent(MovieCreditsResponse.self, forKey: .credits)
+        images = try container.decodeIfPresent(MovieImagesResponse.self, forKey: .images)
+        reviews = try container.decodeIfPresent(MovieReviewsResponse.self, forKey: .reviews)
+        videos = try container.decodeIfPresent(MovieVideosResponse.self, forKey: .videos)
     }
 
     var backdropURL: URL? {
@@ -277,6 +316,41 @@ struct MovieVideo: Identifiable, Codable, Hashable {
     }
 }
 
+struct WatchProviderResponse: Codable, Hashable {
+    let id: Int
+    let results: [String: WatchProviderRegionInfo]
+}
+
+struct WatchProviderRegionInfo: Codable, Hashable {
+    let link: String?
+    let flatrate: [WatchProvider]?
+    let free: [WatchProvider]?
+    let ads: [WatchProvider]?
+    let rent: [WatchProvider]?
+    let buy: [WatchProvider]?
+}
+
+struct WatchProvider: Identifiable, Codable, Hashable {
+    let providerID: Int
+    let providerName: String
+    let logoPath: String?
+
+    enum CodingKeys: String, CodingKey {
+        case providerID = "provider_id"
+        case providerName = "provider_name"
+        case logoPath = "logo_path"
+    }
+
+    var id: Int { providerID }
+
+    var logoURL: URL? {
+        guard let logoPath else {
+            return nil
+        }
+        return URL(string: "https://image.tmdb.org/t/p/w92\(logoPath)")
+    }
+}
+
 struct PersonDetail: Codable, Hashable {
     let id: Int
     let name: String
@@ -290,6 +364,7 @@ struct PersonDetail: Codable, Hashable {
     let homepage: String?
     let images: PersonImagesResponse?
     let movieCredits: PersonMovieCreditsResponse?
+    let combinedCredits: PersonMovieCreditsResponse?
     let externalIDs: PersonExternalIDs?
 
     enum CodingKeys: String, CodingKey {
@@ -305,6 +380,7 @@ struct PersonDetail: Codable, Hashable {
         case homepage
         case images
         case movieCredits = "movie_credits"
+        case combinedCredits = "combined_credits"
         case externalIDs = "external_ids"
     }
 
@@ -322,6 +398,7 @@ struct PersonDetail: Codable, Hashable {
         homepage = try container.decodeIfPresent(String.self, forKey: .homepage)
         images = try container.decodeIfPresent(PersonImagesResponse.self, forKey: .images)
         movieCredits = try container.decodeIfPresent(PersonMovieCreditsResponse.self, forKey: .movieCredits)
+        combinedCredits = try container.decodeIfPresent(PersonMovieCreditsResponse.self, forKey: .combinedCredits)
         externalIDs = try container.decodeIfPresent(PersonExternalIDs.self, forKey: .externalIDs)
     }
 
@@ -365,6 +442,8 @@ struct PersonMovieCredit: Identifiable, Codable, Hashable {
     let character: String?
     let releaseDate: Date?
     let posterPath: String?
+    let mediaType: MediaType?
+    let genreIDs: [Int]
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -374,6 +453,8 @@ struct PersonMovieCredit: Identifiable, Codable, Hashable {
         case releaseDate = "release_date"
         case firstAirDate = "first_air_date"
         case posterPath = "poster_path"
+        case mediaType = "media_type"
+        case genreIDs = "genre_ids"
     }
 
     init(from decoder: Decoder) throws {
@@ -386,6 +467,8 @@ struct PersonMovieCredit: Identifiable, Codable, Hashable {
             container.decodeTMDBDateIfPresent(forKey: .releaseDate)
             ?? container.decodeTMDBDateIfPresent(forKey: .firstAirDate)
         posterPath = try container.decodeIfPresent(String.self, forKey: .posterPath)
+        mediaType = try container.decodeIfPresent(MediaType.self, forKey: .mediaType)
+        genreIDs = try container.decodeIfPresent([Int].self, forKey: .genreIDs) ?? []
     }
 
     func encode(to encoder: Encoder) throws {
@@ -395,6 +478,8 @@ struct PersonMovieCredit: Identifiable, Codable, Hashable {
         try container.encodeIfPresent(character, forKey: .character)
         try container.encodeIfPresent(releaseDate, forKey: .releaseDate)
         try container.encodeIfPresent(posterPath, forKey: .posterPath)
+        try container.encodeIfPresent(mediaType, forKey: .mediaType)
+        try container.encode(genreIDs, forKey: .genreIDs)
     }
 
     var displayTitle: String {
@@ -414,6 +499,22 @@ struct PersonMovieCredit: Identifiable, Codable, Hashable {
             return nil
         }
         return URL(string: "https://image.tmdb.org/t/p/w185\(posterPath)")
+    }
+
+    var normalizedMediaType: MediaType {
+        mediaType ?? .movie
+    }
+
+    var asMovieItem: Movie {
+        Movie(
+            id: id,
+            title: displayTitle,
+            overview: "",
+            releaseDate: releaseDate,
+            posterPath: posterPath,
+            genreIDs: genreIDs,
+            mediaType: normalizedMediaType
+        )
     }
 }
 

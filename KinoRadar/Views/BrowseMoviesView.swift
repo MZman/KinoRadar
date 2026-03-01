@@ -18,6 +18,7 @@ struct BrowseMoviesView: View {
     }
 
     @EnvironmentObject private var store: MovieStore
+    @EnvironmentObject private var settings: AppSettings
     @State private var contentMode: BrowseContentMode = .movies
     @State private var selectedGenreIDs: Set<Int> = []
     @State private var showGenreFilter = false
@@ -154,7 +155,7 @@ struct BrowseMoviesView: View {
                 genres: store.sortedGenres(for: contentMode.mediaType),
                 selectedGenreIDs: $selectedGenreIDs
             )
-            .environmentObject(store)
+            .environmentObject(settings)
         }
         .sheet(isPresented: $showMovieSearch) {
             MovieSearchSheet(mediaType: contentMode.mediaType)
@@ -376,65 +377,46 @@ private struct PosterThumbnailView: View {
 }
 
 private struct GenreFilterSheet: View {
-    @EnvironmentObject private var store: MovieStore
+    @EnvironmentObject private var settings: AppSettings
     let genres: [Genre]
     @Binding var selectedGenreIDs: Set<Int>
 
     @Environment(\.dismiss) private var dismiss
-    @State private var newPresetName = ""
-    @State private var showSaveControls = false
     @State private var selectedWheelGenreID: Int?
 
     var body: some View {
         NavigationStack {
             List {
-                if !store.sortedGenreFilterPresets.isEmpty {
-                    Section("Gespeicherte Filter") {
-                        ForEach(store.sortedGenreFilterPresets) { preset in
-                            HStack {
-                                Button {
-                                    selectedGenreIDs = Set(preset.genreIDs)
-                                    dismiss()
-                                } label: {
-                                    HStack {
-                                        Text(preset.name)
-                                        Spacer()
-                                        Text("\(preset.genreIDs.count)")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
+                if !settings.predefinedGenreFilters.isEmpty {
+                    Section("Vordefinierte Filter") {
+                        ForEach(settings.predefinedGenreFilters) { preset in
+                            Button {
+                                let presetIDs = Set(preset.genreIDs)
+                                selectedGenreIDs = presetIDs
+                                let availableIDs = Set(genres.map(\.id))
+                                if let firstSelected = preset.genreIDs.first(where: { availableIDs.contains($0) }) {
+                                    selectedWheelGenreID = firstSelected
+                                } else {
+                                    selectedWheelGenreID = genres.first?.id
+                                }
+                                dismiss()
+                            } label: {
+                                HStack {
+                                    Text(preset.name)
+                                        .font(.headline)
+                                    Spacer()
+                                    Text("\(preset.genreIDs.count)")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    if Set(preset.genreIDs) == selectedGenreIDs {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundStyle(.green)
                                     }
-                                    .foregroundStyle(.primary)
                                 }
-                                .buttonStyle(.plain)
+                                .foregroundStyle(.primary)
                             }
-                            .swipeActions(edge: .trailing) {
-                                Button(role: .destructive) {
-                                    store.deleteGenreFilterPreset(id: preset.id)
-                                } label: {
-                                    Label("Loeschen", systemImage: "trash")
-                                }
-                            }
+                            .buttonStyle(.plain)
                         }
-                    }
-                }
-
-                if showSaveControls {
-                    Section("Aktuelle Auswahl speichern") {
-                        TextField("Filtername", text: $newPresetName)
-                            .textInputAutocapitalization(.words)
-
-                        Button("Auswahl speichern") {
-                            store.saveGenreFilterPreset(
-                                name: newPresetName,
-                                selectedGenreIDs: selectedGenreIDs
-                            )
-                            newPresetName = ""
-                            showSaveControls = false
-                        }
-                        .disabled(
-                            selectedGenreIDs.isEmpty ||
-                            newPresetName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                        )
                     }
                 }
 
@@ -470,12 +452,6 @@ private struct GenreFilterSheet: View {
                     Button("Zuruecksetzen") {
                         selectedGenreIDs.removeAll()
                     }
-                    Button {
-                        showSaveControls.toggle()
-                    } label: {
-                        Image(systemName: "square.and.arrow.down")
-                    }
-                    .accessibilityLabel("Speichern einblenden")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Fertig") {
@@ -525,6 +501,7 @@ private struct GenreFilterSheet: View {
         }
         return "Aktiv: \(names.joined(separator: ", "))"
     }
+
 }
 
 private struct MovieSearchSheet: View {
