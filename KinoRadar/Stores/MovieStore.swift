@@ -11,7 +11,10 @@ struct GenreFilterPreset: Identifiable, Codable, Hashable {
 final class MovieStore: ObservableObject {
     @Published var nowPlaying: [Movie] = []
     @Published var upcoming: [Movie] = []
+    @Published var tvOnTheAir: [Movie] = []
+    @Published var upcomingTV: [Movie] = []
     @Published private(set) var genres: [Genre] = []
+    @Published private(set) var tvGenres: [Genre] = []
     @Published private(set) var genreFilterPresets: [GenreFilterPreset] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
@@ -23,12 +26,15 @@ final class MovieStore: ObservableObject {
     private let calendar = Calendar.current
     private var movieCache: [Int: Movie] = [:]
     private var cachedGenreNamesByMovieID: [Int: [String]] = [:]
+    private var movieDetailCache: [Int: MovieDetail] = [:]
+    private var personDetailCache: [Int: PersonDetail] = [:]
 
     private enum Keys {
         static let interestedMovieIDs = "interested_movie_ids"
         static let feedbackByMovieID = "feedback_by_movie_id"
         static let movieCache = "movie_cache"
         static let genres = "genres"
+        static let tvGenres = "tv_genres"
         static let genreFilterPresets = "genre_filter_presets"
         static let cachedGenreNamesByMovieID = "cached_genre_names_by_movie_id"
     }
@@ -39,7 +45,7 @@ final class MovieStore: ObservableObject {
     }
 
     func loadMoviesIfNeeded() async {
-        guard nowPlaying.isEmpty, upcoming.isEmpty, !isLoading else {
+        guard nowPlaying.isEmpty, upcoming.isEmpty, tvOnTheAir.isEmpty, upcomingTV.isEmpty, !isLoading else {
             return
         }
         await refresh()
@@ -56,21 +62,36 @@ final class MovieStore: ObservableObject {
         do {
             async let nowPlayingMovies = service.fetchNowPlaying()
             async let upcomingMovies = service.fetchUpcoming()
+            async let tvOnTheAirSeries = service.fetchTVOnTheAir()
+            async let upcomingTVSeries = service.fetchUpcomingTV()
             let (loadedNowPlaying, loadedUpcoming) = try await (nowPlayingMovies, upcomingMovies)
             let loadedGenres = (try? await service.fetchGenres()) ?? genres
+            let loadedTVGenres = (try? await service.fetchTVGenres()) ?? tvGenres
+            let loadedTVOnTheAir = (try? await tvOnTheAirSeries) ?? tvOnTheAir
+            let loadedUpcomingTV = (try? await upcomingTVSeries) ?? upcomingTV
             let sortedLoadedGenres = loadedGenres.sorted {
+                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+            }
+            let sortedLoadedTVGenres = loadedTVGenres.sorted {
                 $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
             }
             let filteredUpcoming = filterUpcomingCurrentYear(loadedUpcoming)
 
             nowPlaying = loadedNowPlaying
             upcoming = filteredUpcoming
+            tvOnTheAir = loadedTVOnTheAir
+            upcomingTV = loadedUpcomingTV
             genres = sortedLoadedGenres
+            tvGenres = sortedLoadedTVGenres
             cacheGenreNames(
                 movies: loadedNowPlaying + filteredUpcoming,
                 genres: sortedLoadedGenres
             )
-            cache(movies: loadedNowPlaying + filteredUpcoming)
+            cacheGenreNames(
+                movies: loadedTVOnTheAir + loadedUpcomingTV,
+                genres: sortedLoadedTVGenres
+            )
+            cache(movies: loadedNowPlaying + filteredUpcoming + loadedTVOnTheAir + loadedUpcomingTV)
         } catch {
             errorMessage = (error as? LocalizedError)?.errorDescription ?? "Filme konnten nicht geladen werden."
         }
@@ -115,12 +136,22 @@ final class MovieStore: ObservableObject {
         genres
     }
 
+    func sortedGenres(for mediaType: MediaType) -> [Genre] {
+        switch mediaType {
+        case .movie:
+            return genres
+        case .tv:
+            return tvGenres
+        }
+    }
+
     var sortedGenreFilterPresets: [GenreFilterPreset] {
         genreFilterPresets
     }
 
     func genreNames(for movie: Movie) -> [String] {
-        let lookup = Dictionary(uniqueKeysWithValues: genres.map { ($0.id, $0.name) })
+        let sourceGenres = movie.mediaType == .tv ? tvGenres : genres
+        let lookup = Dictionary(uniqueKeysWithValues: sourceGenres.map { ($0.id, $0.name) })
         let resolvedNames = movie.genreIDs.compactMap { lookup[$0] }
         if !resolvedNames.isEmpty {
             return resolvedNames
@@ -166,6 +197,41 @@ final class MovieStore: ObservableObject {
         }
         cache(movies: results)
         return results
+    }
+
+    func searchTVSeries(query: String) async throws -> [Movie] {
+        let results = try await service.searchTVSeries(query: query)
+        if !tvGenres.isEmpty {
+            cacheGenreNames(movies: results, genres: tvGenres)
+        }
+        cache(movies: results)
+        return results
+    }
+
+    func cachedMovieDetails(for movieID: Int) -> MovieDetail? {
+        movieDetailCache[movieID]
+    }
+
+    func fetchMovieDetails(for movieID: Int, forceRefresh: Bool = false) async throws -> MovieDetail {
+        if !forceRefresh, let cached = movieDetailCache[movieID] {
+            return cached
+        }
+        let details = try await service.fetchMovieDetails(movieID: movieID)
+        movieDetailCache[movieID] = details
+        return details
+    }
+
+    func cachedPersonDetails(for personID: Int) -> PersonDetail? {
+        personDetailCache[personID]
+    }
+
+    func fetchPersonDetails(for personID: Int, forceRefresh: Bool = false) async throws -> PersonDetail {
+        if !forceRefresh, let cached = personDetailCache[personID] {
+            return cached
+        }
+        let details = try await service.fetchPersonDetails(personID: personID)
+        personDetailCache[personID] = details
+        return details
     }
 
     private func cache(movies: [Movie]) {
@@ -246,6 +312,13 @@ final class MovieStore: ObservableObject {
         }
 
         if
+            let data = userDefaults.data(forKey: Keys.tvGenres),
+            let decoded = try? decoder.decode([Genre].self, from: data)
+        {
+            tvGenres = decoded
+        }
+
+        if
             let data = userDefaults.data(forKey: Keys.genreFilterPresets),
             let decoded = try? decoder.decode([GenreFilterPreset].self, from: data)
         {
@@ -279,6 +352,10 @@ final class MovieStore: ObservableObject {
 
         if let encoded = try? encoder.encode(genres) {
             userDefaults.set(encoded, forKey: Keys.genres)
+        }
+
+        if let encoded = try? encoder.encode(tvGenres) {
+            userDefaults.set(encoded, forKey: Keys.tvGenres)
         }
 
         if let encoded = try? encoder.encode(genreFilterPresets) {

@@ -1,5 +1,10 @@
 import Foundation
 
+enum MediaType: String, Codable, Hashable {
+    case movie
+    case tv
+}
+
 struct Movie: Identifiable, Codable, Hashable {
     let id: Int
     let title: String
@@ -7,24 +12,74 @@ struct Movie: Identifiable, Codable, Hashable {
     let releaseDate: Date?
     let posterPath: String?
     let genreIDs: [Int]
+    let mediaType: MediaType
 
     enum CodingKeys: String, CodingKey {
         case id
         case title
+        case name
         case overview
         case releaseDate = "release_date"
+        case firstAirDate = "first_air_date"
         case posterPath = "poster_path"
         case genreIDs = "genre_ids"
+        case mediaType = "media_type"
+    }
+
+    init(
+        id: Int,
+        title: String,
+        overview: String,
+        releaseDate: Date?,
+        posterPath: String?,
+        genreIDs: [Int],
+        mediaType: MediaType
+    ) {
+        self.id = id
+        self.title = title
+        self.overview = overview
+        self.releaseDate = releaseDate
+        self.posterPath = posterPath
+        self.genreIDs = genreIDs
+        self.mediaType = mediaType
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(Int.self, forKey: .id)
-        title = try container.decode(String.self, forKey: .title)
+
+        let titleFromMovie = try container.decodeIfPresent(String.self, forKey: .title)
+        let titleFromTV = try container.decodeIfPresent(String.self, forKey: .name)
+        let decodedTitle = titleFromMovie ?? titleFromTV ?? "Unbekannt"
+        title = decodedTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? "Unbekannt"
+            : decodedTitle
+
         overview = try container.decodeIfPresent(String.self, forKey: .overview) ?? ""
-        releaseDate = try container.decodeIfPresent(Date.self, forKey: .releaseDate)
+        releaseDate =
+            container.decodeTMDBDateIfPresent(forKey: .releaseDate) ??
+            container.decodeTMDBDateIfPresent(forKey: .firstAirDate)
         posterPath = try container.decodeIfPresent(String.self, forKey: .posterPath)
         genreIDs = try container.decodeIfPresent([Int].self, forKey: .genreIDs) ?? []
+
+        if let explicitType = try container.decodeIfPresent(MediaType.self, forKey: .mediaType) {
+            mediaType = explicitType
+        } else if (try container.decodeIfPresent(String.self, forKey: .firstAirDate)) != nil {
+            mediaType = .tv
+        } else {
+            mediaType = .movie
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(title, forKey: .title)
+        try container.encode(overview, forKey: .overview)
+        try container.encodeIfPresent(releaseDate, forKey: .releaseDate)
+        try container.encodeIfPresent(posterPath, forKey: .posterPath)
+        try container.encode(genreIDs, forKey: .genreIDs)
+        try container.encode(mediaType, forKey: .mediaType)
     }
 
     var releaseDateText: String {
@@ -190,10 +245,12 @@ struct MovieReview: Identifiable, Codable, Hashable {
     }
 
     var createdDateText: String {
-        guard
-            let createdAt,
-            let date = ISO8601DateFormatter.full.date(from: createdAt)
-        else {
+        guard let createdAt else {
+            return "Unbekannt"
+        }
+        let date = ISO8601DateFormatter.full.date(from: createdAt)
+            ?? ISO8601DateFormatter.standard.date(from: createdAt)
+        guard let date else {
             return "Unbekannt"
         }
         return Movie.reviewDateFormatter.string(from: date)
@@ -220,10 +277,168 @@ struct MovieVideo: Identifiable, Codable, Hashable {
     }
 }
 
+struct PersonDetail: Codable, Hashable {
+    let id: Int
+    let name: String
+    let biography: String
+    let birthday: Date?
+    let deathday: Date?
+    let placeOfBirth: String?
+    let knownForDepartment: String?
+    let popularity: Double
+    let profilePath: String?
+    let homepage: String?
+    let images: PersonImagesResponse?
+    let movieCredits: PersonMovieCreditsResponse?
+    let externalIDs: PersonExternalIDs?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case biography
+        case birthday
+        case deathday
+        case placeOfBirth = "place_of_birth"
+        case knownForDepartment = "known_for_department"
+        case popularity
+        case profilePath = "profile_path"
+        case homepage
+        case images
+        case movieCredits = "movie_credits"
+        case externalIDs = "external_ids"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(Int.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        biography = try container.decodeIfPresent(String.self, forKey: .biography) ?? ""
+        birthday = container.decodeTMDBDateIfPresent(forKey: .birthday)
+        deathday = container.decodeTMDBDateIfPresent(forKey: .deathday)
+        placeOfBirth = try container.decodeIfPresent(String.self, forKey: .placeOfBirth)
+        knownForDepartment = try container.decodeIfPresent(String.self, forKey: .knownForDepartment)
+        popularity = try container.decodeIfPresent(Double.self, forKey: .popularity) ?? 0
+        profilePath = try container.decodeIfPresent(String.self, forKey: .profilePath)
+        homepage = try container.decodeIfPresent(String.self, forKey: .homepage)
+        images = try container.decodeIfPresent(PersonImagesResponse.self, forKey: .images)
+        movieCredits = try container.decodeIfPresent(PersonMovieCreditsResponse.self, forKey: .movieCredits)
+        externalIDs = try container.decodeIfPresent(PersonExternalIDs.self, forKey: .externalIDs)
+    }
+
+    var profileURL: URL? {
+        guard let profilePath else {
+            return nil
+        }
+        return URL(string: "https://image.tmdb.org/t/p/w500\(profilePath)")
+    }
+}
+
+struct PersonImagesResponse: Codable, Hashable {
+    let profiles: [PersonImage]
+}
+
+struct PersonImage: Identifiable, Codable, Hashable {
+    let filePath: String
+    let width: Int?
+    let height: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case filePath = "file_path"
+        case width
+        case height
+    }
+
+    var id: String { filePath }
+
+    var imageURL: URL? {
+        URL(string: "https://image.tmdb.org/t/p/w500\(filePath)")
+    }
+}
+
+struct PersonMovieCreditsResponse: Codable, Hashable {
+    let cast: [PersonMovieCredit]
+}
+
+struct PersonMovieCredit: Identifiable, Codable, Hashable {
+    let id: Int
+    let title: String?
+    let character: String?
+    let releaseDate: Date?
+    let posterPath: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case title
+        case name
+        case character
+        case releaseDate = "release_date"
+        case firstAirDate = "first_air_date"
+        case posterPath = "poster_path"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(Int.self, forKey: .id)
+        title = try container.decodeIfPresent(String.self, forKey: .title)
+            ?? container.decodeIfPresent(String.self, forKey: .name)
+        character = try container.decodeIfPresent(String.self, forKey: .character)
+        releaseDate =
+            container.decodeTMDBDateIfPresent(forKey: .releaseDate)
+            ?? container.decodeTMDBDateIfPresent(forKey: .firstAirDate)
+        posterPath = try container.decodeIfPresent(String.self, forKey: .posterPath)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encodeIfPresent(title, forKey: .title)
+        try container.encodeIfPresent(character, forKey: .character)
+        try container.encodeIfPresent(releaseDate, forKey: .releaseDate)
+        try container.encodeIfPresent(posterPath, forKey: .posterPath)
+    }
+
+    var displayTitle: String {
+        let trimmed = title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? "Unbekannter Titel" : trimmed
+    }
+
+    var releaseYearText: String {
+        guard let releaseDate else {
+            return "?"
+        }
+        return String(Calendar.current.component(.year, from: releaseDate))
+    }
+
+    var posterURL: URL? {
+        guard let posterPath else {
+            return nil
+        }
+        return URL(string: "https://image.tmdb.org/t/p/w185\(posterPath)")
+    }
+}
+
+struct PersonExternalIDs: Codable, Hashable {
+    let instagramID: String?
+    let twitterID: String?
+    let facebookID: String?
+
+    enum CodingKeys: String, CodingKey {
+        case instagramID = "instagram_id"
+        case twitterID = "twitter_id"
+        case facebookID = "facebook_id"
+    }
+}
+
 private extension ISO8601DateFormatter {
     static let full: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+
+    static let standard: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
         return formatter
     }()
 }
@@ -233,6 +448,35 @@ private extension Movie {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "de_DE")
         formatter.dateStyle = .medium
+        return formatter
+    }()
+}
+
+private extension KeyedDecodingContainer {
+    func decodeTMDBDateIfPresent(forKey key: Key) -> Date? {
+        if let decodedDate = try? decodeIfPresent(Date.self, forKey: key) {
+            return decodedDate
+        }
+
+        guard let rawDate = (try? decodeIfPresent(String.self, forKey: key)) ?? nil else {
+            return nil
+        }
+
+        let trimmed = rawDate.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            return nil
+        }
+
+        return DateFormatter.tmdbFlexibleDateFormatter.date(from: trimmed)
+    }
+}
+
+private extension DateFormatter {
+    static let tmdbFlexibleDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
         return formatter
     }()
 }

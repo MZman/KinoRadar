@@ -1,7 +1,24 @@
 import SwiftUI
 
 struct BrowseMoviesView: View {
+    enum BrowseContentMode: String, CaseIterable, Identifiable {
+        case movies = "Filme"
+        case series = "Serien"
+
+        var id: String { rawValue }
+
+        var mediaType: MediaType {
+            switch self {
+            case .movies:
+                return .movie
+            case .series:
+                return .tv
+            }
+        }
+    }
+
     @EnvironmentObject private var store: MovieStore
+    @State private var contentMode: BrowseContentMode = .movies
     @State private var selectedGenreIDs: Set<Int> = []
     @State private var showGenreFilter = false
     @State private var showMovieSearch = false
@@ -10,22 +27,73 @@ struct BrowseMoviesView: View {
         count: 3
     )
 
+    private var sourceNowPlaying: [Movie] {
+        switch contentMode {
+        case .movies:
+            return store.nowPlaying
+        case .series:
+            return store.tvOnTheAir
+        }
+    }
+
+    private var sourceUpcoming: [Movie] {
+        switch contentMode {
+        case .movies:
+            return store.upcoming
+        case .series:
+            return store.upcomingTV
+        }
+    }
+
     private var filteredNowPlaying: [Movie] {
-        store.nowPlaying.filter(matchesSelectedGenres)
+        sourceNowPlaying.filter(matchesSelectedGenres)
     }
 
     private var filteredUpcoming: [Movie] {
-        store.upcoming.filter(matchesSelectedGenres)
+        sourceUpcoming.filter(matchesSelectedGenres)
     }
 
     private var isGenreFilterActive: Bool {
         !selectedGenreIDs.isEmpty
     }
 
+    private var firstSectionTitle: String {
+        switch contentMode {
+        case .movies:
+            return "Jetzt im Kino"
+        case .series:
+            return "Jetzt im TV"
+        }
+    }
+
+    private var secondSectionTitle: String {
+        switch contentMode {
+        case .movies:
+            return "Demnaechst"
+        case .series:
+            return "Demnaechste Serien"
+        }
+    }
+
+    private var emptyStateText: String {
+        switch contentMode {
+        case .movies:
+            return "Keine Filme gefunden."
+        case .series:
+            return "Keine Serien gefunden."
+        }
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 brandedHeader
+                Picker("Inhalt", selection: $contentMode) {
+                    ForEach(BrowseContentMode.allCases) { mode in
+                        Text(mode.rawValue).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
 
                 if let errorMessage = store.errorMessage {
                     Text(errorMessage)
@@ -40,8 +108,8 @@ struct BrowseMoviesView: View {
                         )
                 }
 
-                movieGridSection(title: "Jetzt im Kino", movies: filteredNowPlaying)
-                movieGridSection(title: "Demnaechst", movies: filteredUpcoming)
+                movieGridSection(title: firstSectionTitle, movies: filteredNowPlaying)
+                movieGridSection(title: secondSectionTitle, movies: filteredUpcoming)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
@@ -60,7 +128,7 @@ struct BrowseMoviesView: View {
                         .frame(width: 34, height: 34)
                         .background(Circle().fill(Color.accentColor))
                 }
-                .accessibilityLabel("Filme suchen")
+                .accessibilityLabel(contentMode == .movies ? "Filme suchen" : "Serien suchen")
 
                 Button {
                     showGenreFilter = true
@@ -78,22 +146,25 @@ struct BrowseMoviesView: View {
         }
         .overlay {
             if store.isLoading {
-                ProgressView("Lade Filme ...")
+                ProgressView("Lade Inhalte ...")
             }
         }
         .sheet(isPresented: $showGenreFilter) {
             GenreFilterSheet(
-                genres: store.sortedGenres,
+                genres: store.sortedGenres(for: contentMode.mediaType),
                 selectedGenreIDs: $selectedGenreIDs
             )
             .environmentObject(store)
         }
         .sheet(isPresented: $showMovieSearch) {
-            MovieSearchSheet()
+            MovieSearchSheet(mediaType: contentMode.mediaType)
                 .environmentObject(store)
         }
         .task {
             await store.loadMoviesIfNeeded()
+        }
+        .onChange(of: contentMode) { _, _ in
+            selectedGenreIDs.removeAll()
         }
         .refreshable {
             await store.refresh()
@@ -108,7 +179,7 @@ struct BrowseMoviesView: View {
                 .padding(.horizontal, 2)
 
             if movies.isEmpty, !store.isLoading {
-                Text("Keine Filme gefunden.")
+                Text(emptyStateText)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 2)
@@ -460,6 +531,8 @@ private struct MovieSearchSheet: View {
     @EnvironmentObject private var store: MovieStore
     @Environment(\.dismiss) private var dismiss
 
+    let mediaType: MediaType
+
     @State private var query = ""
     @State private var results: [Movie] = []
     @State private var isSearching = false
@@ -469,7 +542,7 @@ private struct MovieSearchSheet: View {
         NavigationStack {
             List {
                 Section("Freitextsuche") {
-                    TextField("Filmtitel eingeben", text: $query)
+                    TextField(searchPlaceholder, text: $query)
                         .textInputAutocapitalization(.words)
                         .onSubmit {
                             Task {
@@ -516,12 +589,12 @@ private struct MovieSearchSheet: View {
                     }
                 } else {
                     Section {
-                        Text("Suche nach Filmen mit Freitext.")
+                        Text(searchInfoText)
                             .foregroundStyle(.secondary)
                     }
                 }
             }
-            .navigationTitle("Filmsuche")
+            .navigationTitle(searchTitle)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Schliessen") {
@@ -547,13 +620,45 @@ private struct MovieSearchSheet: View {
         errorMessage = nil
 
         do {
-            results = try await store.searchMovies(query: trimmedQuery)
+            switch mediaType {
+            case .movie:
+                results = try await store.searchMovies(query: trimmedQuery)
+            case .tv:
+                results = try await store.searchTVSeries(query: trimmedQuery)
+            }
         } catch {
             results = []
             errorMessage = (error as? LocalizedError)?.errorDescription ?? "Suche fehlgeschlagen."
         }
 
         isSearching = false
+    }
+
+    private var searchTitle: String {
+        switch mediaType {
+        case .movie:
+            return "Filmsuche"
+        case .tv:
+            return "Seriensuche"
+        }
+    }
+
+    private var searchPlaceholder: String {
+        switch mediaType {
+        case .movie:
+            return "Filmtitel eingeben"
+        case .tv:
+            return "Serientitel eingeben"
+        }
+    }
+
+    private var searchInfoText: String {
+        switch mediaType {
+        case .movie:
+            return "Suche nach Filmen mit Freitext."
+        case .tv:
+            return "Suche nach Serien mit Freitext."
+        }
     }
 
     private func genreText(for movie: Movie) -> String {
