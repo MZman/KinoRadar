@@ -17,14 +17,14 @@ struct RootView: View {
                         BrowseMoviesView()
                     }
                     .tabItem {
-                        Label("Kino", systemImage: "film")
+                        Label("Filme", systemImage: "film")
                     }
 
                     NavigationStack {
                         InterestedMoviesView()
                     }
                     .tabItem {
-                        Label("Meine Liste", systemImage: "list.star")
+                        Label("Meine Filme", systemImage: "list.bullet.rectangle.portrait")
                     }
 
                     NavigationStack {

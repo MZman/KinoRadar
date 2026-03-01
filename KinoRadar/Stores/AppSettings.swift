@@ -1,6 +1,11 @@
 import Foundation
 import Combine
 
+struct SettingsDefaults {
+    static let defaultRegionCode = "DE"
+    static let defaultLanguageCode = "de-DE"
+}
+
 struct RegionOption: Identifiable, Hashable {
     let code: String
     let name: String
@@ -24,9 +29,6 @@ enum SettingsKeys {
 
 @MainActor
 final class AppSettings: ObservableObject {
-    static let defaultRegionCode = "DE"
-    static let defaultLanguageCode = "de-DE"
-
     static let regionOptions: [RegionOption] = [
         RegionOption(code: "DE", name: "Deutschland"),
         RegionOption(code: "AT", name: "Oesterreich"),
@@ -90,8 +92,8 @@ final class AppSettings: ObservableObject {
         self.userDefaults = userDefaults
         self.apiKey = userDefaults.string(forKey: SettingsKeys.tmdbAPIKey) ?? ""
         self.userName = userDefaults.string(forKey: SettingsKeys.userName) ?? ""
-        self.regionCode = userDefaults.string(forKey: SettingsKeys.regionCode) ?? Self.defaultRegionCode
-        self.languageCode = userDefaults.string(forKey: SettingsKeys.languageCode) ?? Self.defaultLanguageCode
+        self.regionCode = userDefaults.string(forKey: SettingsKeys.regionCode) ?? SettingsDefaults.defaultRegionCode
+        self.languageCode = userDefaults.string(forKey: SettingsKeys.languageCode) ?? SettingsDefaults.defaultLanguageCode
     }
 
     var trimmedUserName: String {

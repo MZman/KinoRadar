@@ -236,14 +236,14 @@ struct TMDBService: MovieServiceProtocol {
         if let regionCodeValue, !regionCodeValue.isEmpty {
             resolvedRegionCode = regionCodeValue
         } else {
-            resolvedRegionCode = AppSettings.defaultRegionCode
+            resolvedRegionCode = SettingsDefaults.defaultRegionCode
         }
 
         let resolvedLanguageCode: String
         if let languageCodeValue, !languageCodeValue.isEmpty {
             resolvedLanguageCode = languageCodeValue
         } else {
-            resolvedLanguageCode = AppSettings.defaultLanguageCode
+            resolvedLanguageCode = SettingsDefaults.defaultLanguageCode
         }
 
         return (
