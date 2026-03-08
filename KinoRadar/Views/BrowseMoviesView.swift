@@ -19,10 +19,12 @@ struct BrowseMoviesView: View {
 
     @EnvironmentObject private var store: MovieStore
     @EnvironmentObject private var settings: AppSettings
+    @EnvironmentObject private var localContext: LocalContextStore
     @State private var contentMode: BrowseContentMode = .movies
     @State private var selectedGenreIDs: Set<Int> = []
     @State private var showGenreFilter = false
     @State private var showMovieSearch = false
+    @State private var didRequestLocation = false
     private let gridColumns = Array(
         repeating: GridItem(.flexible(minimum: 88), spacing: 12, alignment: .top),
         count: 3
@@ -37,42 +39,21 @@ struct BrowseMoviesView: View {
         }
     }
 
-    private var sourceUpcoming: [Movie] {
-        switch contentMode {
-        case .movies:
-            return store.upcoming
-        case .series:
-            return store.upcomingTV
-        }
-    }
-
-    private var filteredNowPlaying: [Movie] {
+    private var filteredCurrent: [Movie] {
         sourceNowPlaying.filter(matchesSelectedGenres)
-    }
-
-    private var filteredUpcoming: [Movie] {
-        sourceUpcoming.filter(matchesSelectedGenres)
     }
 
     private var isGenreFilterActive: Bool {
         !selectedGenreIDs.isEmpty
     }
 
-    private var firstSectionTitle: String {
+    private var currentSectionTitle: String {
+        let city = localContext.resolvedCityName
         switch contentMode {
         case .movies:
-            return "Jetzt im Kino"
+            return "Aktuell in \(city)"
         case .series:
-            return "Jetzt im TV"
-        }
-    }
-
-    private var secondSectionTitle: String {
-        switch contentMode {
-        case .movies:
-            return "Demnaechst"
-        case .series:
-            return "Demnaechste Serien"
+            return "Aktuelle Serien in \(city)"
         }
     }
 
@@ -89,6 +70,7 @@ struct BrowseMoviesView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 brandedHeader
+                locationCard
                 Picker("Inhalt", selection: $contentMode) {
                     ForEach(BrowseContentMode.allCases) { mode in
                         Text(mode.rawValue).tag(mode)
@@ -109,8 +91,7 @@ struct BrowseMoviesView: View {
                         )
                 }
 
-                movieGridSection(title: firstSectionTitle, movies: filteredNowPlaying)
-                movieGridSection(title: secondSectionTitle, movies: filteredUpcoming)
+                movieGridSection(title: currentSectionTitle, movies: filteredCurrent)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
@@ -162,7 +143,17 @@ struct BrowseMoviesView: View {
                 .environmentObject(store)
         }
         .task {
+            if !didRequestLocation {
+                didRequestLocation = true
+                localContext.requestLocation()
+            }
+            await applyCurrentRegionIfNeeded()
             await store.loadMoviesIfNeeded()
+        }
+        .onChange(of: localContext.countryCode) { _, _ in
+            Task {
+                await applyCurrentRegionIfNeeded(forceRefresh: true)
+            }
         }
         .onChange(of: contentMode) { _, _ in
             selectedGenreIDs.removeAll()
@@ -215,6 +206,58 @@ struct BrowseMoviesView: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: 86)
+    }
+
+    private var locationCard: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Label("Standort", systemImage: "location.fill")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                if localContext.isResolving {
+                    ProgressView()
+                        .scaleEffect(0.85)
+                }
+            }
+
+            Text("\(localContext.resolvedCityName), \(settings.regionCode)")
+                .font(.subheadline.weight(.semibold))
+
+            if let locationError = localContext.locationErrorMessage {
+                Text(locationError)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color(.systemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color(.separator).opacity(0.2), lineWidth: 1)
+        )
+    }
+
+    private func applyCurrentRegionIfNeeded(forceRefresh: Bool = false) async {
+        let detectedCountryCode = localContext.countryCode
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .uppercased()
+
+        guard !detectedCountryCode.isEmpty else {
+            return
+        }
+
+        if settings.regionCode != detectedCountryCode {
+            settings.regionCode = detectedCountryCode
+            await store.refresh()
+        } else if forceRefresh {
+            await store.refresh()
+        }
     }
 
     private func matchesSelectedGenres(movie: Movie) -> Bool {

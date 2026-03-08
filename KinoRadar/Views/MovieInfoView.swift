@@ -18,6 +18,13 @@ struct MovieInfoView: View {
     @State private var detailsError: String?
     @State private var watchProviders: WatchProviderRegionInfo?
     @State private var watchProvidersError: String?
+    @State private var franchiseItems: [Movie] = []
+    @State private var franchiseTitle = "Franchise"
+    @State private var franchiseError: String?
+    @State private var seasonDetailsByNumber: [Int: TVSeasonDetail] = [:]
+    @State private var expandedSeasonNumbers: Set<Int> = []
+    @State private var loadingSeasonNumbers: Set<Int> = []
+    @State private var seriesStructureError: String?
     @State private var selectedImagePreview: MediaPreviewItem?
     @State private var selectedVideoPreview: MovieVideo?
 
@@ -47,6 +54,10 @@ struct MovieInfoView: View {
                 infoCard
                 mediaCard
                 streamingCard
+                franchiseCard
+                if movie.mediaType == .tv {
+                    seriesStructureCard
+                }
                 castCard
                 newsCard
                 ratingCard
@@ -74,6 +85,10 @@ struct MovieInfoView: View {
             comment = existing.comment
             details = store.cachedMovieDetails(for: movie)
             watchProviders = store.cachedWatchProviders(for: movie)
+            franchiseItems = store.cachedRelatedMedia(for: movie) ?? []
+            if movie.mediaType == .tv {
+                preloadSeasonDetailsFromCache()
+            }
         }
         .task(id: movie.id) {
             await loadMovieDetails()
@@ -342,6 +357,88 @@ struct MovieInfoView: View {
         )
     }
 
+    private var franchiseCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(franchiseTitle)
+                .font(.title3.bold())
+
+            if let franchiseError {
+                Text(franchiseError)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else if franchiseItems.isEmpty {
+                Text("Keine Franchise-Links verfuegbar.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(alignment: .top, spacing: 12) {
+                        ForEach(franchiseItems) { linkedMovie in
+                            NavigationLink {
+                                MovieInfoView(
+                                    movie: linkedMovie,
+                                    genreText: genreText(for: linkedMovie)
+                                )
+                            } label: {
+                                FranchiseMovieCard(movie: linkedMovie)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color(.systemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color(.separator).opacity(0.2), lineWidth: 1)
+        )
+    }
+
+    private var seriesStructureCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Staffeln & Episoden")
+                .font(.title3.bold())
+
+            if let seriesStructureError {
+                Text(seriesStructureError)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            if seriesSeasons.isEmpty {
+                Text("Keine Staffel-Informationen verfuegbar.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                if let numberOfSeasons = details?.numberOfSeasons, let numberOfEpisodes = details?.numberOfEpisodes {
+                    Text("\(numberOfSeasons) Staffeln, \(numberOfEpisodes) Episoden")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+                ForEach(seriesSeasons, id: \.seasonNumber) { season in
+                    seasonRow(season)
+                }
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color(.systemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color(.separator).opacity(0.2), lineWidth: 1)
+        )
+    }
+
     private var castCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Schauspieler")
@@ -528,15 +625,79 @@ struct MovieInfoView: View {
         }
     }
 
+    @ViewBuilder
+    private func seasonRow(_ season: TVSeasonSummary) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button {
+                toggleSeasonExpansion(season.seasonNumber)
+            } label: {
+                HStack(spacing: 10) {
+                    Text(season.name)
+                        .font(.subheadline.weight(.semibold))
+
+                    if let episodeCount = season.episodeCount {
+                        Text("(\(episodeCount) Episoden)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    if loadingSeasonNumbers.contains(season.seasonNumber) {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                    } else {
+                        Image(systemName: expandedSeasonNumbers.contains(season.seasonNumber) ? "chevron.up" : "chevron.down")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+
+            if expandedSeasonNumbers.contains(season.seasonNumber) {
+                if let seasonDetail = seasonDetailsByNumber[season.seasonNumber] {
+                    if seasonDetail.episodes.isEmpty {
+                        Text("Keine Episoden verfuegbar.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(seasonDetail.episodes) { episode in
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("E\(episode.episodeNumber): \(episode.name)")
+                                    .font(.caption.weight(.semibold))
+                                if !episode.overview.isEmpty {
+                                    Text(episode.overview)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(2)
+                                }
+                            }
+                            .padding(.leading, 4)
+                            .padding(.vertical, 2)
+                        }
+                    }
+                } else if loadingSeasonNumbers.contains(season.seasonNumber) {
+                    ProgressView("Lade Episoden ...")
+                        .font(.caption)
+                }
+            }
+        }
+    }
+
     private func loadMovieDetails() async {
         if details?.id != movie.id {
             details = nil
             watchProviders = nil
+            franchiseItems = []
+            seasonDetailsByNumber.removeAll()
+            expandedSeasonNumbers.removeAll()
         }
 
         isLoadingDetails = true
         detailsError = nil
         watchProvidersError = nil
+        franchiseError = nil
+        seriesStructureError = nil
 
         do {
             details = try await store.fetchMovieDetails(for: movie, forceRefresh: true)
@@ -549,6 +710,11 @@ struct MovieInfoView: View {
         } catch {
             watchProviders = nil
             watchProvidersError = (error as? LocalizedError)?.errorDescription ?? "Streaming-Infos konnten nicht geladen werden."
+        }
+
+        await loadFranchiseData()
+        if movie.mediaType == .tv {
+            preloadSeasonDetailsFromCache()
         }
 
         isLoadingDetails = false
@@ -665,6 +831,118 @@ struct MovieInfoView: View {
         Array((details?.reviews?.results ?? []).prefix(4))
     }
 
+    private var seriesSeasons: [TVSeasonSummary] {
+        (details?.seasons ?? [])
+            .filter { $0.seasonNumber >= 0 }
+            .sorted { lhs, rhs in
+                lhs.seasonNumber < rhs.seasonNumber
+            }
+    }
+
+    private func preloadSeasonDetailsFromCache() {
+        guard movie.mediaType == .tv else {
+            return
+        }
+        for season in seriesSeasons {
+            if let cached = store.cachedTVSeasonDetails(tvID: movie.id, seasonNumber: season.seasonNumber) {
+                seasonDetailsByNumber[season.seasonNumber] = cached
+            }
+        }
+    }
+
+    private func toggleSeasonExpansion(_ seasonNumber: Int) {
+        if expandedSeasonNumbers.contains(seasonNumber) {
+            expandedSeasonNumbers.remove(seasonNumber)
+            return
+        }
+
+        expandedSeasonNumbers.insert(seasonNumber)
+        Task {
+            await loadSeasonDetailIfNeeded(seasonNumber: seasonNumber)
+        }
+    }
+
+    private func loadSeasonDetailIfNeeded(seasonNumber: Int) async {
+        guard movie.mediaType == .tv else {
+            return
+        }
+        guard seasonDetailsByNumber[seasonNumber] == nil else {
+            return
+        }
+        guard !loadingSeasonNumbers.contains(seasonNumber) else {
+            return
+        }
+
+        loadingSeasonNumbers.insert(seasonNumber)
+        defer {
+            loadingSeasonNumbers.remove(seasonNumber)
+        }
+
+        do {
+            let details = try await store.fetchTVSeasonDetails(
+                tvID: movie.id,
+                seasonNumber: seasonNumber,
+                forceRefresh: false
+            )
+            seasonDetailsByNumber[seasonNumber] = details
+        } catch {
+            seriesStructureError = (error as? LocalizedError)?.errorDescription ?? "Episoden konnten nicht geladen werden."
+        }
+    }
+
+    private func loadFranchiseData() async {
+        franchiseItems = []
+        franchiseTitle = movie.mediaType == .tv ? "Franchise / Verwandte Serien" : "Franchise / Universum"
+
+        if movie.mediaType == .movie,
+           let collectionID = details?.belongsToCollection?.id
+        {
+            do {
+                let collection = try await store.fetchCollectionDetails(collectionID: collectionID, forceRefresh: false)
+                franchiseTitle = collection.name
+                franchiseItems = collection.parts
+                    .map(\.asMovie)
+                    .filter { $0.id != movie.id }
+                    .sorted { lhs, rhs in
+                        switch (lhs.releaseDate, rhs.releaseDate) {
+                        case let (left?, right?):
+                            return left < right
+                        case (_?, nil):
+                            return true
+                        case (nil, _?):
+                            return false
+                        case (nil, nil):
+                            return lhs.title.localizedCaseInsensitiveCompare(rhs.title) == .orderedAscending
+                        }
+                    }
+            } catch {
+                franchiseError = (error as? LocalizedError)?.errorDescription ?? "Franchise konnte nicht geladen werden."
+            }
+        }
+
+        if franchiseItems.isEmpty {
+            do {
+                let related = try await store.fetchRelatedMedia(for: movie, forceRefresh: false)
+                franchiseItems = related
+                    .filter { $0.id != movie.id }
+                    .prefix(20)
+                    .map { $0 }
+            } catch {
+                if franchiseError == nil {
+                    franchiseError = (error as? LocalizedError)?.errorDescription ?? "Verwandte Titel konnten nicht geladen werden."
+                }
+            }
+        }
+    }
+
+    private func genreText(for linkedMovie: Movie) -> String {
+        let names = store.genreNames(for: linkedMovie)
+        if names.isEmpty {
+            return "Unbekannt"
+        }
+        return names.joined(separator: ", ")
+    }
+
     private var streamFlatrateProviders: [WatchProvider] {
         uniqueProviders(from: watchProviders?.flatrate)
     }
@@ -726,10 +1004,6 @@ struct MovieInfoView: View {
 
         var urls: [URL] = []
 
-        if let justWatchLink = watchProviders?.link {
-            appendURL(justWatchLink, to: &urls)
-        }
-
         if normalizedProvider.contains("disney") {
             appendURL("disneyplus://", to: &urls)
             appendURL("https://www.disneyplus.com/search/\(encodedTitle)", to: &urls)
@@ -756,6 +1030,9 @@ struct MovieInfoView: View {
             appendURL("https://www.peacocktv.com/search?q=\(encodedTitle)", to: &urls)
         }
 
+        if let justWatchLink = watchProviders?.link {
+            appendURL(justWatchLink, to: &urls)
+        }
         appendURL("https://www.justwatch.com/search?q=\(encodedTitle)", to: &urls)
 
         return uniqueURLs(urls)
@@ -1060,6 +1337,58 @@ private struct WatchProviderChip: View {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(Color(.systemGray5))
             Image(systemName: "play.tv")
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
+private struct FranchiseMovieCard: View {
+    let movie: Movie
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            AsyncImage(url: movie.posterURL) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .scaledToFill()
+                case .empty:
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(Color(.systemGray5))
+                        ProgressView()
+                    }
+                case .failure:
+                    fallbackPoster
+                @unknown default:
+                    fallbackPoster
+                }
+            }
+            .frame(width: 120, height: 176)
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+            Text(movie.title)
+                .font(.caption.weight(.semibold))
+                .lineLimit(2)
+                .frame(width: 120, alignment: .leading)
+
+            Text(movie.mediaType == .tv ? "Serie" : "Film")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .padding(8)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color(.systemGray6))
+        )
+    }
+
+    private var fallbackPoster: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color(.systemGray5))
+            Image(systemName: "film")
                 .foregroundStyle(.secondary)
         }
     }

@@ -129,6 +129,8 @@ struct MovieDetail: Decodable, Hashable {
     let overview: String
     let releaseDate: Date?
     let runtime: Int?
+    let numberOfSeasons: Int?
+    let numberOfEpisodes: Int?
     let voteAverage: Double
     let voteCount: Int
     let status: String?
@@ -136,6 +138,8 @@ struct MovieDetail: Decodable, Hashable {
     let backdropPath: String?
     let posterPath: String?
     let genres: [Genre]
+    let belongsToCollection: MovieCollectionSummary?
+    let seasons: [TVSeasonSummary]
     let credits: MovieCreditsResponse?
     let images: MovieImagesResponse?
     let reviews: MovieReviewsResponse?
@@ -150,6 +154,8 @@ struct MovieDetail: Decodable, Hashable {
         case firstAirDate = "first_air_date"
         case runtime
         case episodeRuntime = "episode_run_time"
+        case numberOfSeasons = "number_of_seasons"
+        case numberOfEpisodes = "number_of_episodes"
         case voteAverage = "vote_average"
         case voteCount = "vote_count"
         case status
@@ -157,6 +163,8 @@ struct MovieDetail: Decodable, Hashable {
         case backdropPath = "backdrop_path"
         case posterPath = "poster_path"
         case genres
+        case belongsToCollection = "belongs_to_collection"
+        case seasons
         case credits
         case images
         case reviews
@@ -186,6 +194,8 @@ struct MovieDetail: Decodable, Hashable {
             runtime = nil
         }
 
+        numberOfSeasons = try container.decodeIfPresent(Int.self, forKey: .numberOfSeasons)
+        numberOfEpisodes = try container.decodeIfPresent(Int.self, forKey: .numberOfEpisodes)
         voteAverage = try container.decodeIfPresent(Double.self, forKey: .voteAverage) ?? 0
         voteCount = try container.decodeIfPresent(Int.self, forKey: .voteCount) ?? 0
         status = try container.decodeIfPresent(String.self, forKey: .status)
@@ -193,6 +203,8 @@ struct MovieDetail: Decodable, Hashable {
         backdropPath = try container.decodeIfPresent(String.self, forKey: .backdropPath)
         posterPath = try container.decodeIfPresent(String.self, forKey: .posterPath)
         genres = try container.decodeIfPresent([Genre].self, forKey: .genres) ?? []
+        belongsToCollection = try container.decodeIfPresent(MovieCollectionSummary.self, forKey: .belongsToCollection)
+        seasons = try container.decodeIfPresent([TVSeasonSummary].self, forKey: .seasons) ?? []
         credits = try container.decodeIfPresent(MovieCreditsResponse.self, forKey: .credits)
         images = try container.decodeIfPresent(MovieImagesResponse.self, forKey: .images)
         reviews = try container.decodeIfPresent(MovieReviewsResponse.self, forKey: .reviews)
@@ -313,6 +325,171 @@ struct MovieVideo: Identifiable, Codable, Hashable {
             return nil
         }
         return URL(string: "https://www.youtube.com/watch?v=\(key)")
+    }
+}
+
+struct MediaListResponse: Decodable {
+    let results: [Movie]
+}
+
+struct MovieCollectionSummary: Codable, Hashable {
+    let id: Int
+    let name: String
+    let posterPath: String?
+    let backdropPath: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case posterPath = "poster_path"
+        case backdropPath = "backdrop_path"
+    }
+}
+
+struct MovieCollectionDetail: Codable, Hashable {
+    let id: Int
+    let name: String
+    let overview: String?
+    let parts: [MovieCollectionPart]
+}
+
+struct MovieCollectionPart: Identifiable, Codable, Hashable {
+    let id: Int
+    let title: String
+    let overview: String
+    let releaseDate: Date?
+    let posterPath: String?
+    let genreIDs: [Int]
+    let mediaType: MediaType
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case title
+        case name
+        case overview
+        case releaseDate = "release_date"
+        case firstAirDate = "first_air_date"
+        case posterPath = "poster_path"
+        case genreIDs = "genre_ids"
+        case mediaType = "media_type"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(Int.self, forKey: .id)
+
+        let titleFromMovie = try container.decodeIfPresent(String.self, forKey: .title)
+        let titleFromTV = try container.decodeIfPresent(String.self, forKey: .name)
+        let resolvedTitle = (titleFromMovie ?? titleFromTV ?? "Unbekannt")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        title = resolvedTitle.isEmpty ? "Unbekannt" : resolvedTitle
+
+        overview = try container.decodeIfPresent(String.self, forKey: .overview) ?? ""
+        releaseDate =
+            container.decodeTMDBDateIfPresent(forKey: .releaseDate)
+            ?? container.decodeTMDBDateIfPresent(forKey: .firstAirDate)
+        posterPath = try container.decodeIfPresent(String.self, forKey: .posterPath)
+        genreIDs = try container.decodeIfPresent([Int].self, forKey: .genreIDs) ?? []
+
+        if let explicitMediaType = try container.decodeIfPresent(MediaType.self, forKey: .mediaType) {
+            mediaType = explicitMediaType
+        } else if (try container.decodeIfPresent(String.self, forKey: .firstAirDate)) != nil {
+            mediaType = .tv
+        } else {
+            mediaType = .movie
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(title, forKey: .title)
+        try container.encode(overview, forKey: .overview)
+        try container.encodeIfPresent(releaseDate, forKey: .releaseDate)
+        try container.encodeIfPresent(posterPath, forKey: .posterPath)
+        try container.encode(genreIDs, forKey: .genreIDs)
+        try container.encode(mediaType, forKey: .mediaType)
+    }
+
+    var asMovie: Movie {
+        Movie(
+            id: id,
+            title: title,
+            overview: overview,
+            releaseDate: releaseDate,
+            posterPath: posterPath,
+            genreIDs: genreIDs,
+            mediaType: mediaType
+        )
+    }
+}
+
+struct TVSeasonSummary: Identifiable, Codable, Hashable {
+    let id: Int
+    let name: String
+    let seasonNumber: Int
+    let episodeCount: Int?
+    let airDate: Date?
+    let posterPath: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case seasonNumber = "season_number"
+        case episodeCount = "episode_count"
+        case airDate = "air_date"
+        case posterPath = "poster_path"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(Int.self, forKey: .id)
+        name = try container.decodeIfPresent(String.self, forKey: .name) ?? "Staffel"
+        seasonNumber = try container.decodeIfPresent(Int.self, forKey: .seasonNumber) ?? 0
+        episodeCount = try container.decodeIfPresent(Int.self, forKey: .episodeCount)
+        airDate = container.decodeTMDBDateIfPresent(forKey: .airDate)
+        posterPath = try container.decodeIfPresent(String.self, forKey: .posterPath)
+    }
+}
+
+struct TVSeasonDetail: Codable, Hashable {
+    let id: Int
+    let name: String
+    let overview: String
+    let seasonNumber: Int
+    let episodes: [TVEpisode]
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case overview
+        case seasonNumber = "season_number"
+        case episodes
+    }
+}
+
+struct TVEpisode: Identifiable, Codable, Hashable {
+    let id: Int
+    let name: String
+    let overview: String
+    let episodeNumber: Int
+    let airDate: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case overview
+        case episodeNumber = "episode_number"
+        case airDate = "air_date"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(Int.self, forKey: .id)
+        name = try container.decodeIfPresent(String.self, forKey: .name) ?? "Episode"
+        overview = try container.decodeIfPresent(String.self, forKey: .overview) ?? ""
+        episodeNumber = try container.decodeIfPresent(Int.self, forKey: .episodeNumber) ?? 0
+        airDate = container.decodeTMDBDateIfPresent(forKey: .airDate)
     }
 }
 

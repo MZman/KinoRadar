@@ -13,6 +13,9 @@ protocol MovieServiceProtocol {
     func fetchPersonDetails(personID: Int) async throws -> PersonDetail
     func fetchWatchProviders(mediaType: MediaType, id: Int) async throws -> WatchProviderRegionInfo?
     func fetchTMDBCountries() async throws -> [RegionOption]
+    func fetchCollectionDetails(collectionID: Int) async throws -> MovieCollectionDetail
+    func fetchTVSeasonDetails(tvID: Int, seasonNumber: Int) async throws -> TVSeasonDetail
+    func fetchRelatedMedia(mediaType: MediaType, id: Int) async throws -> [Movie]
 }
 
 enum APIConfig {
@@ -415,6 +418,114 @@ struct TMDBService: MovieServiceProtocol {
         }
         return regions.sorted {
             $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+        }
+    }
+
+    func fetchCollectionDetails(collectionID: Int) async throws -> MovieCollectionDetail {
+        let apiKey = try readAPIKey()
+        let localeSettings = readLocaleSettings()
+        var components = URLComponents(
+            url: APIConfig.baseURL
+                .appendingPathComponent("collection")
+                .appendingPathComponent(String(collectionID)),
+            resolvingAgainstBaseURL: false
+        )
+        components?.queryItems = [
+            URLQueryItem(name: "api_key", value: apiKey),
+            URLQueryItem(name: "language", value: localeSettings.languageCode)
+        ]
+
+        guard let url = components?.url else {
+            throw URLError(.badURL)
+        }
+
+        let (data, response) = try await session.data(from: url)
+        guard let httpResponse = response as? HTTPURLResponse, 200..<300 ~= httpResponse.statusCode else {
+            throw TMDBError.invalidResponse
+        }
+
+        return try decoder.decode(MovieCollectionDetail.self, from: data)
+    }
+
+    func fetchTVSeasonDetails(tvID: Int, seasonNumber: Int) async throws -> TVSeasonDetail {
+        let apiKey = try readAPIKey()
+        let localeSettings = readLocaleSettings()
+        var components = URLComponents(
+            url: APIConfig.baseURL
+                .appendingPathComponent("tv")
+                .appendingPathComponent(String(tvID))
+                .appendingPathComponent("season")
+                .appendingPathComponent(String(seasonNumber)),
+            resolvingAgainstBaseURL: false
+        )
+        components?.queryItems = [
+            URLQueryItem(name: "api_key", value: apiKey),
+            URLQueryItem(name: "language", value: localeSettings.languageCode)
+        ]
+
+        guard let url = components?.url else {
+            throw URLError(.badURL)
+        }
+
+        let (data, response) = try await session.data(from: url)
+        guard let httpResponse = response as? HTTPURLResponse, 200..<300 ~= httpResponse.statusCode else {
+            throw TMDBError.invalidResponse
+        }
+
+        return try decoder.decode(TVSeasonDetail.self, from: data)
+    }
+
+    func fetchRelatedMedia(mediaType: MediaType, id: Int) async throws -> [Movie] {
+        let apiKey = try readAPIKey()
+        let localeSettings = readLocaleSettings()
+        var components = URLComponents(
+            url: APIConfig.baseURL
+                .appendingPathComponent(mediaType.rawValue)
+                .appendingPathComponent(String(id))
+                .appendingPathComponent("similar"),
+            resolvingAgainstBaseURL: false
+        )
+        components?.queryItems = [
+            URLQueryItem(name: "api_key", value: apiKey),
+            URLQueryItem(name: "language", value: localeSettings.languageCode),
+            URLQueryItem(name: "page", value: "1")
+        ]
+
+        guard let url = components?.url else {
+            throw URLError(.badURL)
+        }
+
+        let (data, response) = try await session.data(from: url)
+        guard let httpResponse = response as? HTTPURLResponse, 200..<300 ~= httpResponse.statusCode else {
+            throw TMDBError.invalidResponse
+        }
+
+        let decoded = try decoder.decode(MediaListResponse.self, from: data)
+        switch mediaType {
+        case .movie:
+            return decoded.results.map { item in
+                Movie(
+                    id: item.id,
+                    title: item.title,
+                    overview: item.overview,
+                    releaseDate: item.releaseDate,
+                    posterPath: item.posterPath,
+                    genreIDs: item.genreIDs,
+                    mediaType: .movie
+                )
+            }
+        case .tv:
+            return decoded.results.map { item in
+                Movie(
+                    id: item.id,
+                    title: item.title,
+                    overview: item.overview,
+                    releaseDate: item.releaseDate,
+                    posterPath: item.posterPath,
+                    genreIDs: item.genreIDs,
+                    mediaType: .tv
+                )
+            }
         }
     }
 

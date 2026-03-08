@@ -29,6 +29,9 @@ final class MovieStore: ObservableObject {
     private var movieDetailCache: [String: MovieDetail] = [:]
     private var personDetailCache: [Int: PersonDetail] = [:]
     private var watchProviderCache: [String: WatchProviderRegionInfo] = [:]
+    private var collectionCache: [Int: MovieCollectionDetail] = [:]
+    private var tvSeasonCache: [String: TVSeasonDetail] = [:]
+    private var relatedMediaCache: [String: [Movie]] = [:]
 
     private enum Keys {
         static let interestedMovieIDs = "interested_movie_ids"
@@ -258,12 +261,62 @@ final class MovieStore: ObservableObject {
         return providers
     }
 
+    func cachedCollectionDetails(for collectionID: Int) -> MovieCollectionDetail? {
+        collectionCache[collectionID]
+    }
+
+    func fetchCollectionDetails(collectionID: Int, forceRefresh: Bool = false) async throws -> MovieCollectionDetail {
+        if !forceRefresh, let cached = collectionCache[collectionID] {
+            return cached
+        }
+        let details = try await service.fetchCollectionDetails(collectionID: collectionID)
+        collectionCache[collectionID] = details
+        return details
+    }
+
+    func cachedTVSeasonDetails(tvID: Int, seasonNumber: Int) -> TVSeasonDetail? {
+        tvSeasonCache[tvSeasonKey(tvID: tvID, seasonNumber: seasonNumber)]
+    }
+
+    func fetchTVSeasonDetails(tvID: Int, seasonNumber: Int, forceRefresh: Bool = false) async throws -> TVSeasonDetail {
+        let cacheKey = tvSeasonKey(tvID: tvID, seasonNumber: seasonNumber)
+        if !forceRefresh, let cached = tvSeasonCache[cacheKey] {
+            return cached
+        }
+        let details = try await service.fetchTVSeasonDetails(tvID: tvID, seasonNumber: seasonNumber)
+        tvSeasonCache[cacheKey] = details
+        return details
+    }
+
+    func cachedRelatedMedia(for movie: Movie) -> [Movie]? {
+        relatedMediaCache[relatedMediaKey(for: movie)]
+    }
+
+    func fetchRelatedMedia(for movie: Movie, forceRefresh: Bool = false) async throws -> [Movie] {
+        let cacheKey = relatedMediaKey(for: movie)
+        if !forceRefresh, let cached = relatedMediaCache[cacheKey] {
+            return cached
+        }
+        let related = try await service.fetchRelatedMedia(mediaType: movie.mediaType, id: movie.id)
+        relatedMediaCache[cacheKey] = related
+        cache(movies: related)
+        return related
+    }
+
     private func watchProvidersKey(for movie: Movie) -> String {
         "\(movie.mediaType.rawValue)-\(movie.id)"
     }
 
     private func movieDetailsKey(for movie: Movie) -> String {
         "\(movie.mediaType.rawValue)-\(movie.id)"
+    }
+
+    private func tvSeasonKey(tvID: Int, seasonNumber: Int) -> String {
+        "tv-\(tvID)-season-\(seasonNumber)"
+    }
+
+    private func relatedMediaKey(for movie: Movie) -> String {
+        "\(movie.mediaType.rawValue)-related-\(movie.id)"
     }
 
     private func cache(movies: [Movie]) {

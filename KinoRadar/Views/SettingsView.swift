@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject private var settings: AppSettings
     @EnvironmentObject private var store: MovieStore
+    @EnvironmentObject private var localContext: LocalContextStore
 
     @State private var showAPIKey = false
     @State private var isLoadingRegions = false
@@ -52,6 +53,14 @@ struct SettingsView: View {
                 }
 
                 Text("Region kommt aus der TMDB API-Liste und steuert, in welchem Land Releases/Provider gesucht werden.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+
+                Button("Standort neu bestimmen") {
+                    localContext.requestLocation()
+                }
+
+                Text("Aktueller Standort: \(localContext.resolvedCityName), \(localContext.countryCode)")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

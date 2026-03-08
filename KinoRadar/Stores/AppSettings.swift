@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import CoreLocation
 
 struct SettingsDefaults {
     static let defaultRegionCode = "DE"
@@ -210,5 +211,151 @@ final class AppSettings: ObservableObject {
             .prefix(2)
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
             .map { $0 }
+    }
+}
+
+final class LocalContextStore: NSObject, ObservableObject {
+    @Published private(set) var cityName: String = ""
+    @Published private(set) var countryCode: String = ""
+    @Published private(set) var authorizationStatus: CLAuthorizationStatus
+    @Published private(set) var isResolving = false
+    @Published private(set) var locationErrorMessage: String?
+
+    private let locationManager: CLLocationManager
+    private let geocoder = CLGeocoder()
+
+    override init() {
+        let manager = CLLocationManager()
+        self.locationManager = manager
+        self.authorizationStatus = manager.authorizationStatus
+        super.init()
+        self.locationManager.delegate = self
+        applyLocaleFallbackIfNeeded()
+    }
+
+    var resolvedCityName: String {
+        let trimmed = cityName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty {
+            return trimmed
+        }
+        return Self.cityNameFromTimeZone() ?? "Deine Region"
+    }
+
+    func requestLocation() {
+        locationErrorMessage = nil
+        let status = locationManager.authorizationStatus
+
+        switch status {
+        case .notDetermined:
+            locationManager.requestWhenInUseAuthorization()
+        case .authorizedWhenInUse, .authorizedAlways:
+            isResolving = true
+            locationManager.requestLocation()
+        case .restricted, .denied:
+            applyLocaleFallbackIfNeeded()
+            locationErrorMessage = "Standortzugriff nicht erlaubt. Region wird aus den Geraet-Einstellungen verwendet."
+        @unknown default:
+            applyLocaleFallbackIfNeeded()
+            locationErrorMessage = "Standortstatus unbekannt. Region wird aus den Geraet-Einstellungen verwendet."
+        }
+    }
+
+    private func applyLocaleFallbackIfNeeded() {
+        if countryCode.isEmpty {
+            countryCode = Locale.current.region?.identifier.uppercased() ?? SettingsDefaults.defaultRegionCode
+        }
+        if cityName.isEmpty {
+            cityName = Self.cityNameFromTimeZone() ?? ""
+        }
+    }
+
+    private static func cityNameFromTimeZone() -> String? {
+        let identifier = TimeZone.current.identifier
+        guard let cityPart = identifier.split(separator: "/").last else {
+            return nil
+        }
+        return cityPart.replacingOccurrences(of: "_", with: " ")
+    }
+}
+
+extension LocalContextStore: CLLocationManagerDelegate {
+    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        publishOnMain {
+            self.authorizationStatus = manager.authorizationStatus
+        }
+
+        switch manager.authorizationStatus {
+        case .authorizedWhenInUse, .authorizedAlways:
+            requestLocation()
+        case .restricted, .denied:
+            publishOnMain {
+                self.applyLocaleFallbackIfNeeded()
+                self.isResolving = false
+                self.locationErrorMessage = "Standortzugriff nicht erlaubt. Region wird aus den Geraet-Einstellungen verwendet."
+            }
+        case .notDetermined:
+            break
+        @unknown default:
+            publishOnMain {
+                self.applyLocaleFallbackIfNeeded()
+                self.isResolving = false
+                self.locationErrorMessage = "Standortstatus unbekannt. Region wird aus den Geraet-Einstellungen verwendet."
+            }
+        }
+    }
+
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let location = locations.first else {
+            publishOnMain {
+                self.applyLocaleFallbackIfNeeded()
+                self.isResolving = false
+            }
+            return
+        }
+
+        geocoder.reverseGeocodeLocation(location) { [weak self] placemarks, error in
+            guard let self else {
+                return
+            }
+
+            self.publishOnMain {
+                defer { self.isResolving = false }
+
+                let placemark = placemarks?.first
+                let cityCandidate = placemark?.locality
+                    ?? placemark?.subAdministrativeArea
+                    ?? placemark?.administrativeArea
+                    ?? Self.cityNameFromTimeZone()
+                    ?? ""
+                let countryCandidate = placemark?.isoCountryCode?.uppercased()
+                    ?? Locale.current.region?.identifier.uppercased()
+                    ?? SettingsDefaults.defaultRegionCode
+
+                self.cityName = cityCandidate
+                self.countryCode = countryCandidate
+
+                if error != nil {
+                    self.locationErrorMessage = "Standort nur teilweise aufgeloest. Region wird trotzdem verwendet."
+                } else {
+                    self.locationErrorMessage = nil
+                }
+            }
+        }
+    }
+
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        publishOnMain {
+            self.applyLocaleFallbackIfNeeded()
+            self.isResolving = false
+            self.locationErrorMessage = "Standort konnte nicht geladen werden. Region wird aus den Geraet-Einstellungen verwendet."
+        }
+    }
+
+    private func publishOnMain(_ block: @escaping () -> Void) {
+        if Thread.isMainThread {
+            block()
+        } else {
+            DispatchQueue.main.async(execute: block)
+        }
     }
 }
